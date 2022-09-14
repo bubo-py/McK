@@ -1,0 +1,103 @@
+openapi: 3.0.0
+info:
+  title: Events API
+  description: An API that contains events
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080/api
+
+paths:
+  /events:
+    description: A path for all events
+    get:
+      summary: Return a list of events
+      responses:
+        200:
+          description: A JSON array of events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+    post:
+      summary: Add a new event
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                  name:
+                    type: string
+                    example: Onboarding Meeting
+                  startTime:
+                    type: string
+                    format: date-time
+                    example: 2022-09-14T09:00:00.000Z
+                  endTime:
+                    type: string
+                    format: date-time
+                    example: 2022-09-14T10:30:00.000Z
+                  description:
+                    type: string
+                    example: This meeting is a part of onboarding process
+                  alertTime:
+                    type: string
+                    format: date-time
+                    example: 2022-09-14T08:45:30.000Z
+              required:
+                - name
+                - startTime
+                - endTime
+      responses:
+        201:
+          description: Event created
+
+  /events/{eventId}:
+    description: A path for a specified event
+    get:
+      summary: Return an event object based on a specified ID
+      parameters: 
+      - in: path
+        name: eventId
+        required: true
+        schema:
+          type: integer
+      responses:
+        200:
+          description: Success response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  eventId:
+                    type: integer
+                    example: 2
+                  name:
+                    type: string
+                    example: Onboarding Meeting
+                  startTime:
+                    type: string
+                    format: date-time
+                    example: 2022-09-14T09:00:00.000Z
+                  endTime:
+                    type: string
+                    format: date-time
+                    example: 2022-09-14T10:30:00.000Z
+                  description:
+                    type: string
+                    example: This meeting is a part of onboarding process
+                  alertTime:
+                    type: string
+                    format: date-time
+                    example: 2022-09-14T08:45:30.000Z
+
+        400:
+          description: The specified event ID is invalid
+        404:
+          description: An event with the specified ID was not found
+        default:
+          description: Unexpected error            
+                    
