@@ -9,7 +9,19 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
+var db []Event
+
 func main() {
+	event1 := Event{
+		ID:          1,
+		Name:        "daily meeting",
+		StartTime:   "2022-09-14T09:00:00.000Z",
+		EndTime:     "2022-09-14T09:00:00.000Z",
+		Description: "Friday daily meeting",
+		AlertTime:   "2022-09-14T08:50:00.000Z",
+	}
+
+	AppendEvent(event1)
 	app := &cli.App{}
 
 	app.Commands = []*cli.Command{
@@ -37,6 +49,10 @@ func serve() {
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("hi"))
 	})
+
+	r.Get("/api/events", GetEvents)
+	r.Post("/api/events", AddEvent)
+	r.Delete("/api/events/{id}", DeleteEvent)
 
 	log.Fatal(http.ListenAndServe(":8080", r))
 }
