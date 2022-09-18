@@ -52,6 +52,7 @@ func serve() {
 
 	r.Get("/api/events", GetEvents)
 	r.Post("/api/events", AddEvent)
+	r.Put("/api/events/{id}", UpdateEvent)
 	r.Delete("/api/events/{id}", DeleteEvent)
 
 	log.Fatal(http.ListenAndServe(":8080", r))

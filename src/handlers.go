@@ -53,3 +53,31 @@ func DeleteEvent(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 	}
 }
+
+func UpdateEvent(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		log.Println(err)
+	}
+
+	var e Event
+	err = json.NewDecoder(r.Body).Decode(&e)
+	if err != nil {
+		log.Println(err)
+	}
+
+	for i, event := range db {
+		if event.ID == id {
+			db[i].Name = e.Name
+			db[i].StartTime = e.StartTime
+			db[i].EndTime = e.EndTime
+			db[i].Description = e.Description
+			db[i].AlertTime = e.AlertTime
+		}
+	}
+
+	err = json.NewEncoder(w).Encode("Event updated")
+	if err != nil {
+		log.Println(err)
+	}
+}
