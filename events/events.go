@@ -1,4 +1,4 @@
-package main
+package events
 
 type Event struct {
 	ID          int    `json:"id"`
@@ -9,6 +9,8 @@ type Event struct {
 	AlertTime   string `json:"alertTime,omitempty"`
 }
 
+var Db []Event
+
 func AppendEvent(e Event) {
-	db = append(db, e)
+	Db = append(Db, e)
 }

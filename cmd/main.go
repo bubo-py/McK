@@ -1,6 +1,8 @@
 package main
 
 import (
+	"github.com/bubo-py/McK/events"
+	"github.com/bubo-py/McK/handlers"
 	"log"
 	"net/http"
 	"os"
@@ -9,10 +11,8 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-var db []Event
-
 func main() {
-	event1 := Event{
+	event1 := events.Event{
 		ID:          1,
 		Name:        "daily meeting",
 		StartTime:   "2022-09-14T09:00:00.000Z",
@@ -21,7 +21,7 @@ func main() {
 		AlertTime:   "2022-09-14T08:50:00.000Z",
 	}
 
-	AppendEvent(event1)
+	events.AppendEvent(event1)
 	app := &cli.App{}
 
 	app.Commands = []*cli.Command{
@@ -46,14 +46,10 @@ func serve() {
 
 	log.Println("Started an HTTP server on port 8080")
 
-	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("hi"))
-	})
-
-	r.Get("/api/events", GetEvents)
-	r.Post("/api/events", AddEvent)
-	r.Put("/api/events/{id}", UpdateEvent)
-	r.Delete("/api/events/{id}", DeleteEvent)
+	r.Get("/api/events", handlers.GetEvents)
+	r.Post("/api/events", handlers.AddEvent)
+	r.Put("/api/events/{id}", handlers.UpdateEvent)
+	r.Delete("/api/events/{id}", handlers.DeleteEvent)
 
 	log.Fatal(http.ListenAndServe(":8080", r))
 }

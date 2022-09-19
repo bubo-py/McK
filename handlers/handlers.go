@@ -1,17 +1,19 @@
-package main
+package handlers
 
 import (
 	"encoding/json"
-	"github.com/go-chi/chi"
 	"log"
 	"net/http"
 	"strconv"
+
+	"github.com/bubo-py/McK/events"
+	"github.com/go-chi/chi"
 )
 
 func GetEvents(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	err := json.NewEncoder(w).Encode(db)
+	err := json.NewEncoder(w).Encode(events.Db)
 	if err != nil {
 		log.Println(err)
 	}
@@ -20,13 +22,13 @@ func GetEvents(w http.ResponseWriter, r *http.Request) {
 func AddEvent(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	var e Event
+	var e events.Event
 	err := json.NewDecoder(r.Body).Decode(&e)
 	if err != nil {
 		log.Println(err)
 	}
 
-	AppendEvent(e)
+	events.AppendEvent(e)
 
 	err = json.NewEncoder(w).Encode(e)
 	if err != nil {
@@ -40,11 +42,11 @@ func DeleteEvent(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 	}
 
-	for i, event := range db {
+	for i, event := range events.Db {
 		if event.ID == id {
-			copy(db[i:], db[i+1:])
-			db[len(db)-1] = Event{}
-			db = db[:len(db)-1]
+			copy(events.Db[i:], events.Db[i+1:])
+			events.Db[len(events.Db)-1] = events.Event{}
+			events.Db = events.Db[:len(events.Db)-1]
 		}
 	}
 
@@ -60,19 +62,19 @@ func UpdateEvent(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 	}
 
-	var e Event
+	var e events.Event
 	err = json.NewDecoder(r.Body).Decode(&e)
 	if err != nil {
 		log.Println(err)
 	}
 
-	for i, event := range db {
+	for i, event := range events.Db {
 		if event.ID == id {
-			db[i].Name = e.Name
-			db[i].StartTime = e.StartTime
-			db[i].EndTime = e.EndTime
-			db[i].Description = e.Description
-			db[i].AlertTime = e.AlertTime
+			events.Db[i].Name = e.Name
+			events.Db[i].StartTime = e.StartTime
+			events.Db[i].EndTime = e.EndTime
+			events.Db[i].Description = e.Description
+			events.Db[i].AlertTime = e.AlertTime
 		}
 	}
 
