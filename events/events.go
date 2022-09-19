@@ -30,7 +30,6 @@ func DeleteEvent(id int) {
 }
 
 func UpdateEvent(e Event, id int) {
-
 	for i, event := range Db {
 		if event.ID == id {
 			Db[i].Name = e.Name
