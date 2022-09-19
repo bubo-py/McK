@@ -9,6 +9,8 @@ type Event struct {
 	AlertTime   string `json:"alertTime,omitempty"`
 }
 
+var ID int
+
 var Db []Event
 
 func AppendEvent(e Event) {

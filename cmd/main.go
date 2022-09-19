@@ -1,7 +1,6 @@
 package main
 
 import (
-	"github.com/bubo-py/McK/events"
 	"github.com/bubo-py/McK/handlers"
 	"log"
 	"net/http"
@@ -12,16 +11,6 @@ import (
 )
 
 func main() {
-	event1 := events.Event{
-		ID:          1,
-		Name:        "daily meeting",
-		StartTime:   "2022-09-14T09:00:00.000Z",
-		EndTime:     "2022-09-14T09:00:00.000Z",
-		Description: "Friday daily meeting",
-		AlertTime:   "2022-09-14T08:50:00.000Z",
-	}
-
-	events.AppendEvent(event1)
 	app := &cli.App{}
 
 	app.Commands = []*cli.Command{

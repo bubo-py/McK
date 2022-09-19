@@ -43,6 +43,9 @@ func AddEvent(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 	}
 
+	events.ID += 1
+	e.ID = events.ID
+
 	events.AppendEvent(e)
 
 	err = json.NewEncoder(w).Encode(e)
