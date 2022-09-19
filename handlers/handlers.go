@@ -10,7 +10,7 @@ import (
 	"github.com/go-chi/chi"
 )
 
-func GetEvents(w http.ResponseWriter, r *http.Request) {
+func GetEventsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	err := json.NewEncoder(w).Encode(events.Db)
@@ -19,7 +19,7 @@ func GetEvents(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func GetEvent(w http.ResponseWriter, r *http.Request) {
+func GetEventHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	id, err := strconv.Atoi(chi.URLParam(r, "id"))
@@ -34,7 +34,7 @@ func GetEvent(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func AddEvent(w http.ResponseWriter, r *http.Request) {
+func AddEventHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	var e events.Event
@@ -42,9 +42,6 @@ func AddEvent(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Println(err)
 	}
-
-	events.ID += 1
-	e.ID = events.ID
 
 	events.AppendEvent(e)
 
@@ -54,19 +51,13 @@ func AddEvent(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func DeleteEvent(w http.ResponseWriter, r *http.Request) {
+func DeleteEventHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(chi.URLParam(r, "id"))
 	if err != nil {
 		log.Println(err)
 	}
 
-	for i, event := range events.Db {
-		if event.ID == id {
-			copy(events.Db[i:], events.Db[i+1:])
-			events.Db[len(events.Db)-1] = events.Event{}
-			events.Db = events.Db[:len(events.Db)-1]
-		}
-	}
+	events.DeleteEvent(id)
 
 	err = json.NewEncoder(w).Encode("Event deleted")
 	if err != nil {
@@ -74,7 +65,7 @@ func DeleteEvent(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func UpdateEvent(w http.ResponseWriter, r *http.Request) {
+func UpdateEventHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(chi.URLParam(r, "id"))
 	if err != nil {
 		log.Println(err)
@@ -86,15 +77,7 @@ func UpdateEvent(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 	}
 
-	for i, event := range events.Db {
-		if event.ID == id {
-			events.Db[i].Name = e.Name
-			events.Db[i].StartTime = e.StartTime
-			events.Db[i].EndTime = e.EndTime
-			events.Db[i].Description = e.Description
-			events.Db[i].AlertTime = e.AlertTime
-		}
-	}
+	events.UpdateEvent(e, id)
 
 	err = json.NewEncoder(w).Encode("Event updated")
 	if err != nil {

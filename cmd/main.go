@@ -1,11 +1,11 @@
 package main
 
 import (
-	"github.com/bubo-py/McK/handlers"
 	"log"
 	"net/http"
 	"os"
 
+	"github.com/bubo-py/McK/handlers"
 	"github.com/go-chi/chi"
 	"github.com/urfave/cli/v2"
 )
@@ -35,11 +35,11 @@ func serve() {
 
 	log.Println("Started an HTTP server on port 8080")
 
-	r.Get("/api/events", handlers.GetEvents)
-	r.Get("/api/events/{id}", handlers.GetEvent)
-	r.Post("/api/events", handlers.AddEvent)
-	r.Put("/api/events/{id}", handlers.UpdateEvent)
-	r.Delete("/api/events/{id}", handlers.DeleteEvent)
+	r.Get("/api/events", handlers.GetEventsHandler)
+	r.Get("/api/events/{id}", handlers.GetEventHandler)
+	r.Post("/api/events", handlers.AddEventHandler)
+	r.Put("/api/events/{id}", handlers.UpdateEventHandler)
+	r.Delete("/api/events/{id}", handlers.DeleteEventHandler)
 
 	log.Fatal(http.ListenAndServe(":8080", r))
 }
