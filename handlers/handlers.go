@@ -19,6 +19,21 @@ func GetEvents(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func GetEvent(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	id, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		log.Println(err)
+	}
+
+	for i, event := range events.Db {
+		if event.ID == id {
+			err = json.NewEncoder(w).Encode(events.Db[i])
+		}
+	}
+}
+
 func AddEvent(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 

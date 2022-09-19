@@ -47,6 +47,7 @@ func serve() {
 	log.Println("Started an HTTP server on port 8080")
 
 	r.Get("/api/events", handlers.GetEvents)
+	r.Get("/api/events/{id}", handlers.GetEvent)
 	r.Post("/api/events", handlers.AddEvent)
 	r.Put("/api/events/{id}", handlers.UpdateEvent)
 	r.Delete("/api/events/{id}", handlers.DeleteEvent)
