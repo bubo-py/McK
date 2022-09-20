@@ -68,6 +68,7 @@ func TestUpdateEvent(t *testing.T) {
 		AlertTime:   "2022-09-14T09:00:00.000",
 	}
 
+	AppendEvent(event)
 	UpdateEvent(event, 1)
 
 	if Db[0].Name != event.Name {
