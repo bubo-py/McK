@@ -98,6 +98,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Event'
+        404:
+          description: Event with specified ID not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
     delete:
       summary: Delete an event by ID

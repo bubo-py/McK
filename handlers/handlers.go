@@ -27,11 +27,17 @@ func GetEventHandler(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 	}
 
-	for i, event := range events.Db {
-		if event.ID == id {
-			err = json.NewEncoder(w).Encode(events.Db[i])
+	ok, index := events.CheckEvent(id)
+	if !ok {
+		w.WriteHeader(http.StatusNotFound)
+		err = json.NewEncoder(w).Encode("Event with specified ID not found")
+		if err != nil {
+			log.Println(err)
 		}
+		return
 	}
+
+	err = json.NewEncoder(w).Encode(events.Db[index])
 }
 
 func AddEventHandler(w http.ResponseWriter, r *http.Request) {
@@ -57,12 +63,17 @@ func DeleteEventHandler(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 	}
 
-	events.DeleteEvent(id)
-
-	err = json.NewEncoder(w).Encode("Event deleted")
-	if err != nil {
-		log.Println(err)
+	ok := events.DeleteEvent(id)
+	if !ok {
+		w.WriteHeader(http.StatusNotFound)
+		err = json.NewEncoder(w).Encode("Event with specified ID not found")
+		if err != nil {
+			log.Println(err)
+		}
+		return
 	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func UpdateEventHandler(w http.ResponseWriter, r *http.Request) {
@@ -77,7 +88,15 @@ func UpdateEventHandler(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 	}
 
-	events.UpdateEvent(e, id)
+	ok := events.UpdateEvent(e, id)
+	if !ok {
+		w.WriteHeader(http.StatusNotFound)
+		err = json.NewEncoder(w).Encode("Event with specified ID not found")
+		if err != nil {
+			log.Println(err)
+		}
+		return
+	}
 
 	err = json.NewEncoder(w).Encode("Event updated")
 	if err != nil {
