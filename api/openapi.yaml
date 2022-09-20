@@ -20,7 +20,7 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Event'
-                  
+
     post:
       summary: Add a new event
       requestBody:
@@ -41,19 +41,19 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-          
-          
+
+
 
   /events/{eventId}:
     description: A path for a specified event
     get:
       summary: Return an event object based on a specified ID
-      parameters: 
-      - in: path
-        name: eventId
-        required: true
-        schema:
-          type: integer
+      parameters:
+        - in: path
+          name: eventId
+          required: true
+          schema:
+            type: integer
       responses:
         200:
           description: Success response
@@ -67,7 +67,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-          
+
         404:
           description: An event with the specified ID was not found
           content:
@@ -76,20 +76,20 @@ paths:
                 $ref: '#/components/schemas/Error'
         default:
           description: Unexpected error
-          
+
     put:
       summary: Update an event
-      parameters: 
-      - in: path
-        name: eventId
-        required: true
-        schema:
-          type: integer
+      parameters:
+        - in: path
+          name: eventId
+          required: true
+          schema:
+            type: integer
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/createEvent'
+              $ref: '#/components/schemas/updateEvent'
 
       responses:
         200:
@@ -98,15 +98,15 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Event'
-            
+
     delete:
       summary: Delete an event by ID
-      parameters: 
-      - in: path
-        name: eventId
-        required: true
-        schema:
-          type: integer
+      parameters:
+        - in: path
+          name: eventId
+          required: true
+          schema:
+            type: integer
       responses:
         204:
           description: Event deleted
@@ -116,7 +116,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-          
+
 components:
   schemas:
     createEvent:
@@ -144,7 +144,29 @@ components:
         - name
         - startTime
         - endTime
-        
+
+    updateEvent:
+      type: object
+      properties:
+        name:
+          type: string
+          example: Onboarding Meeting
+        startTime:
+          type: string
+          format: date-time
+          example: 2022-09-14T09:00:00.000Z
+        endTime:
+          type: string
+          format: date-time
+          example: 2022-09-14T10:30:00.000Z
+        description:
+          type: string
+          example: This meeting is a part of onboarding process
+        alertTime:
+          type: string
+          format: date-time
+          example: 2022-09-14T08:45:30.000Z
+
     Event:
       allOf:
         - type: object
@@ -152,8 +174,10 @@ components:
             id:
               type: integer
               example: 2
+          required:
+            - id
         - $ref: '#/components/schemas/createEvent'
-    
+
     Error:
       properties:
         errorCode:
@@ -161,6 +185,4 @@ components:
           example: 400
         errorDescription:
           type: string
-          example: The server cannot process the request due to something that is perceived to be a client error 
-
-                    
+          example: The server cannot process the request due to something that is perceived to be a client error
