@@ -10,10 +10,12 @@ import (
 	"github.com/go-chi/chi"
 )
 
+var db = events.InitDatabase()
+
 func GetEventsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	err := json.NewEncoder(w).Encode(events.Db)
+	err := json.NewEncoder(w).Encode(db.Storage)
 	if err != nil {
 		log.Println(err)
 	}
@@ -27,7 +29,7 @@ func GetEventHandler(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 	}
 
-	ok, index := events.CheckEvent(id)
+	ok, index := db.CheckEvent(id)
 	if !ok {
 		w.WriteHeader(http.StatusNotFound)
 		err = json.NewEncoder(w).Encode("Event with specified ID not found")
@@ -37,7 +39,7 @@ func GetEventHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = json.NewEncoder(w).Encode(events.Db[index])
+	err = json.NewEncoder(w).Encode(db.Storage[index])
 }
 
 func AddEventHandler(w http.ResponseWriter, r *http.Request) {
@@ -49,7 +51,7 @@ func AddEventHandler(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 	}
 
-	events.AppendEvent(e)
+	db.AppendEvent(e)
 
 	err = json.NewEncoder(w).Encode(e)
 	if err != nil {
@@ -63,7 +65,7 @@ func DeleteEventHandler(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 	}
 
-	ok := events.DeleteEvent(id)
+	ok := db.DeleteEvent(id)
 	if !ok {
 		w.WriteHeader(http.StatusNotFound)
 		err = json.NewEncoder(w).Encode("Event with specified ID not found")
@@ -88,7 +90,7 @@ func UpdateEventHandler(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 	}
 
-	ok := events.UpdateEvent(e, id)
+	ok := db.UpdateEvent(e, id)
 	if !ok {
 		w.WriteHeader(http.StatusNotFound)
 		err = json.NewEncoder(w).Encode("Event with specified ID not found")

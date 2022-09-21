@@ -9,15 +9,20 @@ type Event struct {
 	AlertTime   string `json:"alertTime,omitempty"`
 }
 
-var ID int
+type Database struct {
+	ID      int
+	Storage []Event
+}
 
-var Db []Event
+func InitDatabase() Database {
+	return Database{}
+}
 
-func CheckEvent(id int) (bool, int) {
+func (db *Database) CheckEvent(id int) (bool, int) {
 	var index int
 	present := false
 
-	for i, event := range Db {
+	for i, event := range db.Storage {
 		if event.ID == id {
 			index = i
 			present = true
@@ -26,36 +31,36 @@ func CheckEvent(id int) (bool, int) {
 	return present, index
 }
 
-func AppendEvent(e Event) {
-	ID += 1
-	e.ID = ID
-	Db = append(Db, e)
+func (db *Database) AppendEvent(e Event) {
+	db.ID += 1
+	e.ID = db.ID
+	db.Storage = append(db.Storage, e)
 }
 
-func DeleteEvent(id int) bool {
+func (db *Database) DeleteEvent(id int) bool {
 	present := false
 
-	for i, event := range Db {
+	for i, event := range db.Storage {
 		if event.ID == id {
-			copy(Db[i:], Db[i+1:])
-			Db[len(Db)-1] = Event{}
-			Db = Db[:len(Db)-1]
+			copy(db.Storage[i:], db.Storage[i+1:])
+			db.Storage[len(db.Storage)-1] = Event{}
+			db.Storage = db.Storage[:len(db.Storage)-1]
 			present = true
 		}
 	}
 	return present
 }
 
-func UpdateEvent(e Event, id int) bool {
+func (db *Database) UpdateEvent(e Event, id int) bool {
 	present := false
 
-	for i, event := range Db {
+	for i, event := range db.Storage {
 		if event.ID == id {
-			Db[i].Name = e.Name
-			Db[i].StartTime = e.StartTime
-			Db[i].EndTime = e.EndTime
-			Db[i].Description = e.Description
-			Db[i].AlertTime = e.AlertTime
+			db.Storage[i].Name = e.Name
+			db.Storage[i].StartTime = e.StartTime
+			db.Storage[i].EndTime = e.EndTime
+			db.Storage[i].Description = e.Description
+			db.Storage[i].AlertTime = e.AlertTime
 			present = true
 		}
 	}

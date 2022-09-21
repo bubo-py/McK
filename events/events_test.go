@@ -5,6 +5,8 @@ import (
 )
 
 func TestAppendEvent(t *testing.T) {
+	db := InitDatabase()
+
 	event := Event{
 		ID:          100,
 		Name:        "Daily meeting",
@@ -22,15 +24,17 @@ func TestAppendEvent(t *testing.T) {
 		Description: "A Weekly meeting for frontend team",
 		AlertTime:   "2022-09-16T18:45:00.000Z",
 	}
-	AppendEvent(event)
-	AppendEvent(event2)
+	db.AppendEvent(event)
+	db.AppendEvent(event2)
 
-	if len(Db) < 2 {
+	if len(db.Storage) < 2 {
 		t.Error("Failed to add an event")
 	}
 }
 
 func TestDeleteEvent(t *testing.T) {
+	db := InitDatabase()
+
 	event := Event{
 		ID:          300,
 		Name:        "Daily meeting",
@@ -48,17 +52,19 @@ func TestDeleteEvent(t *testing.T) {
 		Description: "A Weekly meeting for frontend team",
 		AlertTime:   "2022-09-16T18:45:00.000Z",
 	}
-	AppendEvent(event)
-	AppendEvent(event2)
+	db.AppendEvent(event)
+	db.AppendEvent(event2)
 
-	DeleteEvent(2)
+	db.DeleteEvent(2)
 
-	if len(Db)%2 == 0 {
+	if len(db.Storage) != 1 {
 		t.Error("Failed to delete an event")
 	}
 }
 
 func TestUpdateEvent(t *testing.T) {
+	db := InitDatabase()
+
 	event := Event{
 		ID:          500,
 		Name:        "Updated event",
@@ -68,10 +74,10 @@ func TestUpdateEvent(t *testing.T) {
 		AlertTime:   "2022-09-14T09:00:00.000",
 	}
 
-	AppendEvent(event)
-	UpdateEvent(event, 1)
+	db.AppendEvent(event)
+	db.UpdateEvent(event, 1)
 
-	if Db[0].Name != event.Name {
+	if db.Storage[0].Name != event.Name {
 		t.Error("Failed to update an event")
 	}
 }
