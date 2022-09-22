@@ -14,8 +14,8 @@ type Database struct {
 	Storage []Event
 }
 
-func InitDatabase() Database {
-	return Database{}
+func InitDatabase() *Database {
+	return &Database{}
 }
 
 func (db *Database) CheckEvent(id int) (bool, int) {
@@ -29,6 +29,14 @@ func (db *Database) CheckEvent(id int) (bool, int) {
 		}
 	}
 	return present, index
+}
+
+func (db *Database) GetStorage() []Event {
+	return db.Storage
+}
+
+func (db *Database) GetStoragePosition(id int) Event {
+	return db.Storage[id]
 }
 
 func (db *Database) AppendEvent(e Event) {

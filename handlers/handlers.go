@@ -10,12 +10,22 @@ import (
 	"github.com/go-chi/chi"
 )
 
-var db = events.InitDatabase()
+type DbHandler struct {
+	events.DatabaseRepository
+}
+
+func InitDb(repository events.DatabaseRepository) DbHandler {
+	return DbHandler{
+		repository,
+	}
+}
+
+var db = InitDb(events.InitDatabase())
 
 func GetEventsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	err := json.NewEncoder(w).Encode(db.Storage)
+	err := json.NewEncoder(w).Encode(db.GetStorage())
 	if err != nil {
 		log.Println(err)
 	}
@@ -39,7 +49,7 @@ func GetEventHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = json.NewEncoder(w).Encode(db.Storage[index])
+	err = json.NewEncoder(w).Encode(db.GetStoragePosition(index))
 }
 
 func AddEventHandler(w http.ResponseWriter, r *http.Request) {
