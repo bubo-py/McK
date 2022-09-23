@@ -6,26 +6,17 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/bubo-py/McK/events"
+	"github.com/bubo-py/McK/repositories"
+	"github.com/bubo-py/McK/types"
 	"github.com/go-chi/chi"
 )
 
-type DbHandler struct {
-	events.DatabaseRepository
-}
-
-func InitDb(repository events.DatabaseRepository) DbHandler {
-	return DbHandler{
-		repository,
-	}
-}
-
-var db = InitDb(events.InitDatabase())
+var db repositories.DatabaseRepository = repositories.InitDatabase()
 
 func GetEventsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	err := json.NewEncoder(w).Encode(db.GetStorage())
+	err := json.NewEncoder(w).Encode(db.GetEvents())
 	if err != nil {
 		log.Println(err)
 	}
@@ -49,13 +40,13 @@ func GetEventHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = json.NewEncoder(w).Encode(db.GetStoragePosition(index))
+	err = json.NewEncoder(w).Encode(db.GetEventsPosition(index))
 }
 
 func AddEventHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	var e events.Event
+	var e types.Event
 	err := json.NewDecoder(r.Body).Decode(&e)
 	if err != nil {
 		log.Println(err)
@@ -94,7 +85,7 @@ func UpdateEventHandler(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 	}
 
-	var e events.Event
+	var e types.Event
 	err = json.NewDecoder(r.Body).Decode(&e)
 	if err != nil {
 		log.Println(err)
