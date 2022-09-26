@@ -25,8 +25,8 @@ func TestAppendEvent(t *testing.T) {
 		Description: "A Weekly meeting for frontend team",
 		AlertTime:   "2022-09-16T18:45:00.000Z",
 	}
-	db.AppendEvent(event)
-	db.AppendEvent(event2)
+	db.AddEvent(event)
+	db.AddEvent(event2)
 
 	if len(db.GetEvents()) < 2 {
 		t.Error("Failed to add an event")
@@ -51,10 +51,10 @@ func TestDeleteEvent(t *testing.T) {
 		Description: "A Weekly meeting for frontend team",
 		AlertTime:   "2022-09-16T18:45:00.000Z",
 	}
-	db.AppendEvent(event)
-	db.AppendEvent(event2)
+	db.AddEvent(event)
+	db.AddEvent(event2)
 
-	db.DeleteEvent(2)
+	_ = db.DeleteEvent(2)
 
 	if len(db.GetEvents())%2 == 0 {
 		t.Error("Failed to delete an event")
@@ -80,11 +80,11 @@ func TestUpdateEvent(t *testing.T) {
 		AlertTime:   "2022-09-14T09:00:00.000",
 	}
 
-	db.AppendEvent(event)
-	db.AppendEvent(event2)
-	db.UpdateEvent(event, 1)
+	db.AddEvent(event)
+	db.AddEvent(event2)
+	_ = db.UpdateEvent(event, 1)
 
-	if db.GetEventsPosition(0).Name != event.Name {
+	if e, _ := db.GetEvent(1); e.Name != event.Name {
 		t.Error("Failed to update an event")
 	}
 }

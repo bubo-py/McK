@@ -1,6 +1,8 @@
 package repositories
 
 import (
+	"errors"
+
 	"github.com/bubo-py/McK/types"
 )
 
@@ -13,50 +15,38 @@ func InitDatabase() *Database {
 	return &Database{}
 }
 
-func (db *Database) CheckEvent(id int) (bool, int) {
-	var index int
-	present := false
-
-	for i, event := range db.Storage {
-		if event.ID == id {
-			index = i
-			present = true
-		}
-	}
-	return present, index
-}
-
 func (db *Database) GetEvents() []types.Event {
 	return db.Storage
 }
 
-func (db *Database) GetEventsPosition(id int) types.Event {
-	return db.Storage[id]
+func (db *Database) GetEvent(id int) (types.Event, error) {
+	for i, event := range db.Storage {
+		if event.ID == id {
+			return db.Storage[i], nil
+		}
+	}
+	return types.Event{}, errors.New("event with specified id not found")
 }
 
-func (db *Database) AppendEvent(e types.Event) {
+func (db *Database) AddEvent(e types.Event) {
 	db.ID += 1
 	e.ID = db.ID
 	db.Storage = append(db.Storage, e)
 }
 
-func (db *Database) DeleteEvent(id int) bool {
-	present := false
-
+func (db *Database) DeleteEvent(id int) error {
 	for i, event := range db.Storage {
 		if event.ID == id {
 			copy(db.Storage[i:], db.Storage[i+1:])
 			db.Storage[len(db.Storage)-1] = types.Event{}
 			db.Storage = db.Storage[:len(db.Storage)-1]
-			present = true
+			return nil
 		}
 	}
-	return present
+	return errors.New("event with specified id not found")
 }
 
-func (db *Database) UpdateEvent(e types.Event, id int) bool {
-	present := false
-
+func (db *Database) UpdateEvent(e types.Event, id int) error {
 	for i, event := range db.Storage {
 		if event.ID == id {
 			db.Storage[i].Name = e.Name
@@ -64,8 +54,8 @@ func (db *Database) UpdateEvent(e types.Event, id int) bool {
 			db.Storage[i].EndTime = e.EndTime
 			db.Storage[i].Description = e.Description
 			db.Storage[i].AlertTime = e.AlertTime
-			present = true
+			return nil
 		}
 	}
-	return present
+	return errors.New("event with specified id not found")
 }

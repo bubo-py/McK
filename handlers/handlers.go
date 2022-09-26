@@ -6,17 +6,17 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/bubo-py/McK/repositories"
+	"github.com/bubo-py/McK/service"
 	"github.com/bubo-py/McK/types"
 	"github.com/go-chi/chi"
 )
 
-var db repositories.DatabaseRepository = repositories.InitDatabase()
+var bl = service.BusinessLogic{}
 
 func GetEventsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	err := json.NewEncoder(w).Encode(db.GetEvents())
+	err := json.NewEncoder(w).Encode(bl.GetEvents())
 	if err != nil {
 		log.Println(err)
 	}
@@ -30,17 +30,20 @@ func GetEventHandler(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 	}
 
-	ok, index := db.CheckEvent(id)
-	if !ok {
+	event, err := bl.GetEvent(id)
+	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
-		err = json.NewEncoder(w).Encode("Event with specified ID not found")
+		err = json.NewEncoder(w).Encode(err.Error())
 		if err != nil {
 			log.Println(err)
 		}
 		return
 	}
 
-	err = json.NewEncoder(w).Encode(db.GetEventsPosition(index))
+	err = json.NewEncoder(w).Encode(event)
+	if err != nil {
+		log.Println(err)
+	}
 }
 
 func AddEventHandler(w http.ResponseWriter, r *http.Request) {
@@ -52,7 +55,15 @@ func AddEventHandler(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 	}
 
-	db.AppendEvent(e)
+	err = bl.AddEvent(e)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		err = json.NewEncoder(w).Encode(err.Error())
+		if err != nil {
+			log.Println(err)
+		}
+		return
+	}
 
 	err = json.NewEncoder(w).Encode(e)
 	if err != nil {
@@ -66,10 +77,10 @@ func DeleteEventHandler(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 	}
 
-	ok := db.DeleteEvent(id)
-	if !ok {
+	err = bl.DeleteEvent(id)
+	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
-		err = json.NewEncoder(w).Encode("Event with specified ID not found")
+		err = json.NewEncoder(w).Encode(err.Error())
 		if err != nil {
 			log.Println(err)
 		}
@@ -91,10 +102,10 @@ func UpdateEventHandler(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 	}
 
-	ok := db.UpdateEvent(e, id)
-	if !ok {
+	err = bl.UpdateEvent(e, id)
+	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
-		err = json.NewEncoder(w).Encode("Event with specified ID not found")
+		err = json.NewEncoder(w).Encode(err.Error())
 		if err != nil {
 			log.Println(err)
 		}
