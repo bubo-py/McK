@@ -117,3 +117,66 @@ func UpdateEventHandler(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 	}
 }
+
+func GetEventsByDay(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	day := chi.URLParam(r, "day")
+
+	events, err := bl.GetEventsByDay(day)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		err = json.NewEncoder(w).Encode(err.Error())
+		if err != nil {
+			log.Println(err)
+		}
+		return
+	}
+
+	err = json.NewEncoder(w).Encode(events)
+	if err != nil {
+		log.Println(err)
+	}
+}
+
+func GetEventsByMonth(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	month := chi.URLParam(r, "month")
+
+	events, err := bl.GetEventsByMonth(month)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		err = json.NewEncoder(w).Encode(err.Error())
+		if err != nil {
+			log.Println(err)
+		}
+		return
+	}
+
+	err = json.NewEncoder(w).Encode(events)
+	if err != nil {
+		log.Println(err)
+	}
+}
+
+func GetEventsByYear(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	year := chi.URLParam(r, "year")
+
+	events, err := bl.GetEventsByYear(year)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		err = json.NewEncoder(w).Encode(err.Error())
+		if err != nil {
+			log.Println(err)
+		}
+		return
+	}
+
+	err = json.NewEncoder(w).Encode(events)
+	if err != nil {
+		log.Println(err)
+	}
+}

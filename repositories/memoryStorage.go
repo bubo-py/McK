@@ -59,3 +59,36 @@ func (db *Database) UpdateEvent(e types.Event, id int) error {
 	}
 	return errors.New("event with specified id not found")
 }
+
+func (db *Database) GetEventsByDay(day string) []types.Event {
+	filtered := make([]types.Event, 0)
+
+	for _, event := range db.Storage {
+		if event.StartTime[8:10] == day {
+			filtered = append(filtered, event)
+		}
+	}
+	return filtered
+}
+
+func (db *Database) GetEventsByMonth(month string) []types.Event {
+	filtered := make([]types.Event, 0)
+
+	for _, event := range db.Storage {
+		if event.StartTime[5:7] == month {
+			filtered = append(filtered, event)
+		}
+	}
+	return filtered
+}
+
+func (db *Database) GetEventsByYear(year string) []types.Event {
+	filtered := make([]types.Event, 0)
+
+	for _, event := range db.Storage {
+		if event.StartTime[8:10] == year {
+			filtered = append(filtered, event)
+		}
+	}
+	return filtered
+}

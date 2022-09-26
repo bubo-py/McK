@@ -1,8 +1,9 @@
 package repositories
 
 import (
-	"github.com/bubo-py/McK/types"
 	"testing"
+
+	"github.com/bubo-py/McK/types"
 )
 
 var db = InitDatabase()

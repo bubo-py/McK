@@ -2,6 +2,8 @@ package service
 
 import (
 	"errors"
+	"strconv"
+
 	"github.com/bubo-py/McK/repositories"
 	"github.com/bubo-py/McK/types"
 )
@@ -13,6 +15,9 @@ type BusinessLogicInterface interface {
 	DeleteEvent(id int)
 	UpdateEvent(e types.Event, id int)
 	ValidatePostRequest(e types.Event) error
+	GetEventsByDay(day string) ([]types.Event, error)
+	GetEventsByMonth(month string) ([]types.Event, error)
+	GetEventsByYear(year string) ([]types.Event, error)
 }
 
 type BusinessLogic struct{}
@@ -50,4 +55,43 @@ func (bl BusinessLogic) ValidatePostRequest(e types.Event) error {
 		return nil
 	}
 	return errors.New("invalid post request")
+}
+
+func (bl BusinessLogic) GetEventsByDay(day string) ([]types.Event, error) {
+	d, err := strconv.Atoi(day)
+	if err != nil {
+		return []types.Event{}, err
+	}
+
+	if d > 0 && d < 32 {
+		return db.GetEventsByDay(day), nil
+	}
+
+	return []types.Event{}, errors.New("invalid day value")
+}
+
+func (bl BusinessLogic) GetEventsByMonth(month string) ([]types.Event, error) {
+	m, err := strconv.Atoi(month)
+	if err != nil {
+		return []types.Event{}, err
+	}
+
+	if m > 0 && m < 13 {
+		return db.GetEventsByMonth(month), nil
+	}
+
+	return []types.Event{}, errors.New("invalid month value")
+}
+
+func (bl BusinessLogic) GetEventsByYear(year string) ([]types.Event, error) {
+	y, err := strconv.Atoi(year)
+	if err != nil {
+		return []types.Event{}, err
+	}
+
+	if y > 0 {
+		return db.GetEventsByYear(year), nil
+	}
+
+	return []types.Event{}, errors.New("invalid year value")
 }
