@@ -14,7 +14,3 @@ type DatabaseRepository interface {
 	GetEventsByMonth(month string) []types.Event
 	GetEventsByYear(year string) []types.Event
 }
-
-type DbHandler struct {
-	DatabaseRepository
-}

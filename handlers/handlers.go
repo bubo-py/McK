@@ -121,7 +121,10 @@ func UpdateEventHandler(w http.ResponseWriter, r *http.Request) {
 func GetEventsByDay(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	day := chi.URLParam(r, "day")
+	day, err := strconv.Atoi(chi.URLParam(r, "day"))
+	if err != nil {
+		log.Println(err)
+	}
 
 	events, err := bl.GetEventsByDay(day)
 	if err != nil {
@@ -142,7 +145,10 @@ func GetEventsByDay(w http.ResponseWriter, r *http.Request) {
 func GetEventsByMonth(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	month := chi.URLParam(r, "month")
+	month, err := strconv.Atoi(chi.URLParam(r, "month"))
+	if err != nil {
+		log.Println(err)
+	}
 
 	events, err := bl.GetEventsByMonth(month)
 	if err != nil {
@@ -163,7 +169,10 @@ func GetEventsByMonth(w http.ResponseWriter, r *http.Request) {
 func GetEventsByYear(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	year := chi.URLParam(r, "year")
+	year, err := strconv.Atoi(chi.URLParam(r, "year"))
+	if err != nil {
+		log.Println(err)
+	}
 
 	events, err := bl.GetEventsByYear(year)
 	if err != nil {

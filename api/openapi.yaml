@@ -20,6 +20,22 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Event'
+      parameters:
+        - in: query
+          name: day
+          schema:
+            type: integer
+          description: Return events by startTime day
+        - in: query
+          name: month
+          schema:
+            type: integer
+          description: Return events by startTime month
+        - in: query
+          name: year
+          schema:
+            type: integer
+          description: Return events by startTime year
 
     post:
       summary: Add a new event
@@ -41,8 +57,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-
-
 
   /events/{eventId}:
     description: A path for a specified event
@@ -122,48 +136,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-
-  /events/filters/day/{day}:
-    description: A path for all events
-    get:
-      summary: Return a list of events
-      responses:
-        200:
-          description: A JSON array of events
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Event'
-
-  /events/filters/month/{month}:
-    description: A path for all events
-    get:
-      summary: Return a list of events
-      responses:
-        200:
-          description: A JSON array of events
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Event'
-
-  /events/filters/year/{year}:
-    description: A path for all events
-    get:
-      summary: Return a list of events
-      responses:
-        200:
-          description: A JSON array of events
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Event'
 
 components:
   schemas:
