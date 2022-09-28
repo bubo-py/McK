@@ -10,7 +10,7 @@ type DatabaseRepository interface {
 	AddEvent(e types.Event)
 	DeleteEvent(id int) error
 	UpdateEvent(e types.Event, id int) error
-	GetEventsByDay(day string) []types.Event
-	GetEventsByMonth(month string) []types.Event
-	GetEventsByYear(year string) []types.Event
+	GetEventsByDay(day int) []types.Event
+	GetEventsByMonth(month int) []types.Event
+	GetEventsByYear(year int) []types.Event
 }

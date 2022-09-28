@@ -16,7 +16,10 @@ func InitDatabase() *Database {
 }
 
 func (db *Database) GetEvents() []types.Event {
-	return db.Storage
+	s := make([]types.Event, len(db.Storage))
+	copy(s, db.Storage)
+
+	return s
 }
 
 func (db *Database) GetEvent(id int) (types.Event, error) {
@@ -60,33 +63,33 @@ func (db *Database) UpdateEvent(e types.Event, id int) error {
 	return errors.New("event with specified id not found")
 }
 
-func (db *Database) GetEventsByDay(day string) []types.Event {
+func (db *Database) GetEventsByDay(day int) []types.Event {
 	filtered := make([]types.Event, 0)
 
 	for _, event := range db.Storage {
-		if event.StartTime[8:10] == day {
+		if event.StartTime.Day() == day {
 			filtered = append(filtered, event)
 		}
 	}
 	return filtered
 }
 
-func (db *Database) GetEventsByMonth(month string) []types.Event {
+func (db *Database) GetEventsByMonth(month int) []types.Event {
 	filtered := make([]types.Event, 0)
 
 	for _, event := range db.Storage {
-		if event.StartTime[5:7] == month {
+		if int(event.StartTime.Month()) == month {
 			filtered = append(filtered, event)
 		}
 	}
 	return filtered
 }
 
-func (db *Database) GetEventsByYear(year string) []types.Event {
+func (db *Database) GetEventsByYear(year int) []types.Event {
 	filtered := make([]types.Event, 0)
 
 	for _, event := range db.Storage {
-		if event.StartTime[8:10] == year {
+		if event.StartTime.Year() == year {
 			filtered = append(filtered, event)
 		}
 	}
