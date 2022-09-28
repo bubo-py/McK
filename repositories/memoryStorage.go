@@ -16,10 +16,7 @@ func InitDatabase() *Database {
 }
 
 func (db *Database) GetEvents() []types.Event {
-	s := make([]types.Event, len(db.Storage))
-	copy(s, db.Storage)
-
-	return s
+	return db.Storage
 }
 
 func (db *Database) GetEvent(id int) (types.Event, error) {

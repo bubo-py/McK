@@ -16,7 +16,14 @@ var bl = service.BusinessLogic{}
 func GetEventsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	err := json.NewEncoder(w).Encode(bl.GetEvents())
+	var f types.Filters
+	query := r.URL.Query()
+
+	f.Day, _ = strconv.Atoi(query.Get("day"))
+	f.Month, _ = strconv.Atoi(query.Get("month"))
+	f.Year, _ = strconv.Atoi(query.Get("year"))
+
+	err := json.NewEncoder(w).Encode(bl.GetEvents(f))
 	if err != nil {
 		log.Println(err)
 	}
