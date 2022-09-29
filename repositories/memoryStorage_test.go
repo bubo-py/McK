@@ -67,14 +67,14 @@ func TestDeleteEvent(t *testing.T) {
 			db.AddEvent(event)
 
 			err := db.DeleteEvent(tc.id)
+			if len(db.GetEvents()) != tc.expLength {
+				t.Errorf("Failed to delete an event: got length: %v, expected: %v", len(db.GetEvents()), tc.expLength)
+			}
+
 			if err != nil {
 				if err.Error() != tc.expError.Error() {
 					t.Errorf("Should return different error: got: %v, expected: %v", err, tc.expError)
 				}
-			}
-
-			if len(db.GetEvents()) != tc.expLength {
-				t.Errorf("Failed to delete an event: got length: %v, expected: %v", len(db.GetEvents()), tc.expLength)
 			}
 		})
 	}
@@ -89,7 +89,7 @@ func TestUpdateEvent(t *testing.T) {
 		expError error
 	}{
 		{1, "Updated event", nil},
-		{8, "Hello", errors.New("event with specified id not found")},
+		{8, "", errors.New("event with specified id not found")},
 	}
 	for _, tc := range testCases {
 		testName := fmt.Sprintf("Delete id %d", tc.id)
@@ -105,22 +105,28 @@ func TestUpdateEvent(t *testing.T) {
 				AlertTime:   ti,
 			}
 
+			uEvent := types.Event{
+				ID:          300,
+				Name:        "Updated event",
+				StartTime:   ti,
+				EndTime:     ti,
+				Description: "A daily meeting for backend team",
+				AlertTime:   ti,
+			}
+
 			db.AddEvent(event)
 			db.AddEvent(event)
 
-			err := db.UpdateEvent(event, 1)
+			err := db.UpdateEvent(uEvent, tc.id)
 			if err != nil {
 				if err.Error() != tc.expError.Error() {
 					t.Errorf("Should return different error: got: %v, expected: %v", err, tc.expError)
 				}
 			}
 
-			e, err := db.GetEvent(1)
-			if err != nil {
-				t.Error(err)
-			}
+			e, _ := db.GetEvent(tc.id)
 			if e.Name != tc.expName {
-				t.Errorf("Failed to update an event: got name: %v, expected: %v", len(db.GetEvents()), tc.expName)
+				t.Errorf("Failed to update an event: got name: %v, expected: %v", e.Name, tc.expName)
 			}
 
 		})

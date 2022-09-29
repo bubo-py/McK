@@ -13,7 +13,9 @@ import (
 
 var bl = service.BusinessLogic{}
 
-func GetEventsHandler(w http.ResponseWriter, r *http.Request) {
+type Handler struct{}
+
+func (h Handler) GetEventsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	var f types.Filters
@@ -29,7 +31,7 @@ func GetEventsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func GetEventHandler(w http.ResponseWriter, r *http.Request) {
+func (h Handler) GetEventHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	id, err := strconv.Atoi(chi.URLParam(r, "id"))
@@ -53,7 +55,7 @@ func GetEventHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func AddEventHandler(w http.ResponseWriter, r *http.Request) {
+func (h Handler) AddEventHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	var e types.Event
@@ -78,7 +80,7 @@ func AddEventHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func DeleteEventHandler(w http.ResponseWriter, r *http.Request) {
+func (h Handler) DeleteEventHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(chi.URLParam(r, "id"))
 	if err != nil {
 		log.Println(err)
@@ -97,7 +99,7 @@ func DeleteEventHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func UpdateEventHandler(w http.ResponseWriter, r *http.Request) {
+func (h Handler) UpdateEventHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(chi.URLParam(r, "id"))
 	if err != nil {
 		log.Println(err)
@@ -120,78 +122,6 @@ func UpdateEventHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = json.NewEncoder(w).Encode("Event updated")
-	if err != nil {
-		log.Println(err)
-	}
-}
-
-func GetEventsByDay(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
-	day, err := strconv.Atoi(chi.URLParam(r, "day"))
-	if err != nil {
-		log.Println(err)
-	}
-
-	events, err := bl.GetEventsByDay(day)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		err = json.NewEncoder(w).Encode(err.Error())
-		if err != nil {
-			log.Println(err)
-		}
-		return
-	}
-
-	err = json.NewEncoder(w).Encode(events)
-	if err != nil {
-		log.Println(err)
-	}
-}
-
-func GetEventsByMonth(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
-	month, err := strconv.Atoi(chi.URLParam(r, "month"))
-	if err != nil {
-		log.Println(err)
-	}
-
-	events, err := bl.GetEventsByMonth(month)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		err = json.NewEncoder(w).Encode(err.Error())
-		if err != nil {
-			log.Println(err)
-		}
-		return
-	}
-
-	err = json.NewEncoder(w).Encode(events)
-	if err != nil {
-		log.Println(err)
-	}
-}
-
-func GetEventsByYear(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
-	year, err := strconv.Atoi(chi.URLParam(r, "year"))
-	if err != nil {
-		log.Println(err)
-	}
-
-	events, err := bl.GetEventsByYear(year)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		err = json.NewEncoder(w).Encode(err.Error())
-		if err != nil {
-			log.Println(err)
-		}
-		return
-	}
-
-	err = json.NewEncoder(w).Encode(events)
 	if err != nil {
 		log.Println(err)
 	}
