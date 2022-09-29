@@ -1,30 +1,34 @@
 package repositories
 
 import (
+	"errors"
+	"fmt"
 	"testing"
+	"time"
 
 	"github.com/bubo-py/McK/types"
 )
 
-var db = InitDatabase()
-
 func TestAppendEvent(t *testing.T) {
+	db := InitDatabase()
+	ti := time.Date(2022, 9, 16, 20, 30, 0, 0, time.Local)
+
 	event := types.Event{
 		ID:          100,
 		Name:        "Daily meeting",
-		StartTime:   "2022-09-14T09:00:00.000Z",
-		EndTime:     "2022-09-14T09:30:00.000Z",
+		StartTime:   ti,
+		EndTime:     ti,
 		Description: "A daily meeting for backend team",
-		AlertTime:   "2022-09-14T08:45:00.000Z",
+		AlertTime:   ti,
 	}
 
 	event2 := types.Event{
 		ID:          200,
 		Name:        "Weekly meeting",
-		StartTime:   "2022-09-16T19:00:00.000Z",
-		EndTime:     "2022-09-16T19:30:00.000Z",
+		StartTime:   ti,
+		EndTime:     ti,
 		Description: "A Weekly meeting for frontend team",
-		AlertTime:   "2022-09-16T18:45:00.000Z",
+		AlertTime:   ti,
 	}
 	db.AddEvent(event)
 	db.AddEvent(event2)
@@ -35,57 +39,90 @@ func TestAppendEvent(t *testing.T) {
 }
 
 func TestDeleteEvent(t *testing.T) {
-	event := types.Event{
-		ID:          300,
-		Name:        "Daily meeting",
-		StartTime:   "2022-09-14T09:00:00.000Z",
-		EndTime:     "2022-09-14T09:30:00.000Z",
-		Description: "A daily meeting for backend team",
-		AlertTime:   "2022-09-14T08:45:00.000Z",
+	db := InitDatabase()
+	ti := time.Date(2022, 9, 16, 20, 30, 0, 0, time.Local)
+
+	testCases := []struct {
+		id        int
+		expLength int
+		expError  error
+	}{
+		{1, 1, nil},
+		{1, 3, errors.New("event with specified id not found")},
+		{8, 5, errors.New("event with specified id not found")},
 	}
+	for _, tc := range testCases {
+		testName := fmt.Sprintf("Delete id %d", tc.id)
+		t.Run(testName, func(t *testing.T) {
+			event := types.Event{
+				ID:          300,
+				Name:        "Daily meeting",
+				StartTime:   ti,
+				EndTime:     ti,
+				Description: "A daily meeting for backend team",
+				AlertTime:   ti,
+			}
 
-	event2 := types.Event{
-		ID:          400,
-		Name:        "Weekly meeting",
-		StartTime:   "2022-09-16T19:00:00.000Z",
-		EndTime:     "2022-09-16T19:30:00.000Z",
-		Description: "A Weekly meeting for frontend team",
-		AlertTime:   "2022-09-16T18:45:00.000Z",
-	}
-	db.AddEvent(event)
-	db.AddEvent(event2)
+			db.AddEvent(event)
+			db.AddEvent(event)
 
-	_ = db.DeleteEvent(2)
+			err := db.DeleteEvent(tc.id)
+			if err != nil {
+				if err.Error() != tc.expError.Error() {
+					t.Errorf("Should return different error: got: %v, expected: %v", err, tc.expError)
+				}
+			}
 
-	if len(db.GetEvents())%2 == 0 {
-		t.Error("Failed to delete an event")
+			if len(db.GetEvents()) != tc.expLength {
+				t.Errorf("Failed to delete an event: got length: %v, expected: %v", len(db.GetEvents()), tc.expLength)
+			}
+		})
 	}
 }
 
 func TestUpdateEvent(t *testing.T) {
-	event := types.Event{
-		ID:          500,
-		Name:        "Updated event",
-		StartTime:   "2022-09-14T09:00:00.000",
-		EndTime:     "2022-09-14T09:00:00.000",
-		Description: "An event that has just been updated",
-		AlertTime:   "2022-09-14T09:00:00.000",
+	ti := time.Date(2022, 9, 16, 20, 30, 0, 0, time.Local)
+
+	testCases := []struct {
+		id       int
+		expName  string
+		expError error
+	}{
+		{1, "Updated event", nil},
+		{8, "Hello", errors.New("event with specified id not found")},
 	}
+	for _, tc := range testCases {
+		testName := fmt.Sprintf("Delete id %d", tc.id)
+		t.Run(testName, func(t *testing.T) {
+			db := InitDatabase()
 
-	event2 := types.Event{
-		ID:          600,
-		Name:        "Updated event",
-		StartTime:   "2022-09-14T09:00:00.000",
-		EndTime:     "2022-09-14T09:00:00.000",
-		Description: "An event that has just been updated",
-		AlertTime:   "2022-09-14T09:00:00.000",
-	}
+			event := types.Event{
+				ID:          300,
+				Name:        "Daily meeting",
+				StartTime:   ti,
+				EndTime:     ti,
+				Description: "A daily meeting for backend team",
+				AlertTime:   ti,
+			}
 
-	db.AddEvent(event)
-	db.AddEvent(event2)
-	_ = db.UpdateEvent(event, 1)
+			db.AddEvent(event)
+			db.AddEvent(event)
 
-	if e, _ := db.GetEvent(1); e.Name != event.Name {
-		t.Error("Failed to update an event")
+			err := db.UpdateEvent(event, 1)
+			if err != nil {
+				if err.Error() != tc.expError.Error() {
+					t.Errorf("Should return different error: got: %v, expected: %v", err, tc.expError)
+				}
+			}
+
+			e, err := db.GetEvent(1)
+			if err != nil {
+				t.Error(err)
+			}
+			if e.Name != tc.expName {
+				t.Errorf("Failed to update an event: got name: %v, expected: %v", len(db.GetEvents()), tc.expName)
+			}
+
+		})
 	}
 }
