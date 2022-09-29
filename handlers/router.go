@@ -1,9 +1,10 @@
 package handlers
 
 import (
-	"github.com/go-chi/chi"
 	"log"
 	"net/http"
+
+	"github.com/go-chi/chi"
 )
 
 var h Handler
