@@ -21,11 +21,56 @@ func (h Handler) GetEventsHandler(w http.ResponseWriter, r *http.Request) {
 	var f types.Filters
 	query := r.URL.Query()
 
-	f.Day, _ = strconv.Atoi(query.Get("day"))
-	f.Month, _ = strconv.Atoi(query.Get("month"))
-	f.Year, _ = strconv.Atoi(query.Get("year"))
+	_, present := query["day"]
+	if present {
+		day, err := strconv.Atoi(query.Get("day"))
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			err = json.NewEncoder(w).Encode(err.Error())
+			if err != nil {
+				log.Println(err)
+			}
+		}
+		f.Day = day
+	}
 
-	err := json.NewEncoder(w).Encode(bl.GetEvents(f))
+	_, present = query["month"]
+	if present {
+		month, err := strconv.Atoi(query.Get("month"))
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			err = json.NewEncoder(w).Encode(err.Error())
+			if err != nil {
+				log.Println(err)
+			}
+		}
+		f.Month = month
+	}
+
+	_, present = query["year"]
+	if present {
+		year, err := strconv.Atoi(query.Get("year"))
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			err = json.NewEncoder(w).Encode(err.Error())
+			if err != nil {
+				log.Println(err)
+			}
+		}
+		f.Year = year
+	}
+
+	events, err := bl.GetEvents(f)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		err = json.NewEncoder(w).Encode(err.Error())
+		if err != nil {
+			log.Println(err)
+		}
+		return
+	}
+
+	err = json.NewEncoder(w).Encode(events)
 	if err != nil {
 		log.Println(err)
 	}

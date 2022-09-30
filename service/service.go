@@ -13,28 +13,45 @@ type BusinessLogicInterface interface {
 	AddEvent(e types.Event)
 	DeleteEvent(id int)
 	UpdateEvent(e types.Event, id int)
-	GetEventsByDay(day string) ([]types.Event, error)
-	GetEventsByMonth(month string) ([]types.Event, error)
-	GetEventsByYear(year string) ([]types.Event, error)
 }
 
 type BusinessLogic struct{}
 
 var db repositories.DatabaseRepository = repositories.InitDatabase()
 
-func (bl BusinessLogic) GetEvents(f types.Filters) []types.Event {
+func (bl BusinessLogic) GetEvents(f types.Filters) ([]types.Event, error) {
 	var s []types.Event
 
 	if f.Day == 0 && f.Month == 0 && f.Year == 0 {
 		s = append(s, db.GetEvents()...)
-		return s
+		return s, nil
 	}
 
-	s = append(s, db.GetEventsByDay(f.Day)...)
-	s = append(s, db.GetEventsByMonth(f.Month)...)
-	s = append(s, db.GetEventsByYear(f.Year)...)
+	if f.Day != 0 {
+		if f.Day <= 0 || f.Day >= 32 {
+			return s, errors.New("invalid day value")
+		}
 
-	return s
+		s = append(s, db.GetEventsByDay(f.Day)...)
+	}
+
+	if f.Month != 0 {
+		if f.Month <= 0 || f.Month >= 13 {
+			return s, errors.New("invalid month value")
+		}
+
+		s = append(s, db.GetEventsByMonth(f.Month)...)
+	}
+
+	if f.Year != 0 {
+		if f.Year <= 0 {
+			return s, errors.New("invalid year value")
+		}
+
+		s = append(s, db.GetEventsByYear(f.Year)...)
+	}
+
+	return s, nil
 }
 
 func (bl BusinessLogic) GetEvent(id int) (types.Event, error) {
@@ -66,28 +83,4 @@ func validatePostRequest(e types.Event) error {
 	}
 
 	return nil
-}
-
-func (bl BusinessLogic) GetEventsByDay(day int) ([]types.Event, error) {
-	if day <= 0 && day >= 32 {
-		return []types.Event{}, errors.New("invalid day value")
-	}
-
-	return db.GetEventsByDay(day), nil
-}
-
-func (bl BusinessLogic) GetEventsByMonth(month int) ([]types.Event, error) {
-	if month <= 0 && month >= 13 {
-		return []types.Event{}, errors.New("invalid month value")
-	}
-
-	return db.GetEventsByMonth(month), nil
-}
-
-func (bl BusinessLogic) GetEventsByYear(year int) ([]types.Event, error) {
-	if year <= 0 {
-		return []types.Event{}, errors.New("invalid year value")
-	}
-
-	return db.GetEventsByYear(year), nil
 }

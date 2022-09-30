@@ -39,7 +39,6 @@ func TestAppendEvent(t *testing.T) {
 }
 
 func TestDeleteEvent(t *testing.T) {
-	db := InitDatabase()
 	ti := time.Date(2022, 9, 16, 20, 30, 0, 0, time.Local)
 
 	testCases := []struct {
@@ -48,12 +47,14 @@ func TestDeleteEvent(t *testing.T) {
 		expError  error
 	}{
 		{1, 1, nil},
-		{1, 3, errors.New("event with specified id not found")},
-		{8, 5, errors.New("event with specified id not found")},
+		{2, 1, nil},
+		{8, 2, errors.New("event with specified id not found")},
 	}
 	for _, tc := range testCases {
 		testName := fmt.Sprintf("Delete id %d", tc.id)
 		t.Run(testName, func(t *testing.T) {
+			db := InitDatabase()
+
 			event := types.Event{
 				ID:          300,
 				Name:        "Daily meeting",
