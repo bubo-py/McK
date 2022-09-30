@@ -8,22 +8,28 @@ import (
 )
 
 type BusinessLogicInterface interface {
-	GetEvents(id int)
-	GetEvent(id int)
-	AddEvent(e types.Event)
-	DeleteEvent(id int)
-	UpdateEvent(e types.Event, id int)
+	GetEvents(f types.Filters) ([]types.Event, error)
+	GetEvent(id int) (types.Event, error)
+	AddEvent(e types.Event) error
+	DeleteEvent(id int) error
+	UpdateEvent(e types.Event, id int) error
 }
 
-type BusinessLogic struct{}
+type BusinessLogic struct {
+	db repositories.DatabaseRepository
+}
 
-var db repositories.DatabaseRepository = repositories.InitDatabase()
+func InitBusinessLogic(db repositories.DatabaseRepository) BusinessLogic {
+	var bl BusinessLogic
+	bl.db = db
+	return bl
+}
 
 func (bl BusinessLogic) GetEvents(f types.Filters) ([]types.Event, error) {
 	var s []types.Event
 
 	if f.Day == 0 && f.Month == 0 && f.Year == 0 {
-		s = append(s, db.GetEvents()...)
+		s = append(s, bl.db.GetEvents()...)
 		return s, nil
 	}
 
@@ -32,7 +38,7 @@ func (bl BusinessLogic) GetEvents(f types.Filters) ([]types.Event, error) {
 			return s, errors.New("invalid day value")
 		}
 
-		s = append(s, db.GetEventsByDay(f.Day)...)
+		s = append(s, bl.db.GetEventsByDay(f.Day)...)
 	}
 
 	if f.Month != 0 {
@@ -40,7 +46,7 @@ func (bl BusinessLogic) GetEvents(f types.Filters) ([]types.Event, error) {
 			return s, errors.New("invalid month value")
 		}
 
-		s = append(s, db.GetEventsByMonth(f.Month)...)
+		s = append(s, bl.db.GetEventsByMonth(f.Month)...)
 	}
 
 	if f.Year != 0 {
@@ -48,14 +54,14 @@ func (bl BusinessLogic) GetEvents(f types.Filters) ([]types.Event, error) {
 			return s, errors.New("invalid year value")
 		}
 
-		s = append(s, db.GetEventsByYear(f.Year)...)
+		s = append(s, bl.db.GetEventsByYear(f.Year)...)
 	}
 
 	return s, nil
 }
 
 func (bl BusinessLogic) GetEvent(id int) (types.Event, error) {
-	return db.GetEvent(id)
+	return bl.db.GetEvent(id)
 }
 
 func (bl BusinessLogic) AddEvent(e types.Event) error {
@@ -65,16 +71,16 @@ func (bl BusinessLogic) AddEvent(e types.Event) error {
 		return err
 	}
 
-	db.AddEvent(e)
+	bl.db.AddEvent(e)
 	return nil
 }
 
 func (bl BusinessLogic) DeleteEvent(id int) error {
-	return db.DeleteEvent(id)
+	return bl.db.DeleteEvent(id)
 }
 
 func (bl BusinessLogic) UpdateEvent(e types.Event, id int) error {
-	return db.UpdateEvent(e, id)
+	return bl.db.UpdateEvent(e, id)
 }
 
 func validatePostRequest(e types.Event) error {

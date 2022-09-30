@@ -7,9 +7,7 @@ import (
 	"github.com/go-chi/chi"
 )
 
-var h Handler
-
-func Serve() {
+func Serve(h Handler) {
 	r := chi.NewRouter()
 
 	log.Println("Started an HTTP server on port 8080")

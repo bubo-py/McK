@@ -11,10 +11,15 @@ import (
 	"github.com/go-chi/chi"
 )
 
-var bl = service.BusinessLogic{}
+type Handler struct {
+	bl service.BusinessLogicInterface
+}
 
-type Handler struct{}
-
+func InitHandler(bl service.BusinessLogicInterface) Handler {
+	var h Handler
+	h.bl = bl
+	return h
+}
 func (h Handler) GetEventsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -60,7 +65,7 @@ func (h Handler) GetEventsHandler(w http.ResponseWriter, r *http.Request) {
 		f.Year = year
 	}
 
-	events, err := bl.GetEvents(f)
+	events, err := h.bl.GetEvents(f)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		err = json.NewEncoder(w).Encode(err.Error())
@@ -84,7 +89,7 @@ func (h Handler) GetEventHandler(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 	}
 
-	event, err := bl.GetEvent(id)
+	event, err := h.bl.GetEvent(id)
 	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
 		err = json.NewEncoder(w).Encode(err.Error())
@@ -109,7 +114,7 @@ func (h Handler) AddEventHandler(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 	}
 
-	err = bl.AddEvent(e)
+	err = h.bl.AddEvent(e)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		err = json.NewEncoder(w).Encode(err.Error())
@@ -131,7 +136,7 @@ func (h Handler) DeleteEventHandler(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 	}
 
-	err = bl.DeleteEvent(id)
+	err = h.bl.DeleteEvent(id)
 	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
 		err = json.NewEncoder(w).Encode(err.Error())
@@ -156,7 +161,7 @@ func (h Handler) UpdateEventHandler(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 	}
 
-	err = bl.UpdateEvent(e, id)
+	err = h.bl.UpdateEvent(e, id)
 	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
 		err = json.NewEncoder(w).Encode(err.Error())

@@ -5,10 +5,16 @@ import (
 	"os"
 
 	"github.com/bubo-py/McK/handlers"
+	"github.com/bubo-py/McK/repositories"
+	"github.com/bubo-py/McK/service"
 	"github.com/urfave/cli/v2"
 )
 
 func main() {
+	db := repositories.InitDatabase()
+	bl := service.InitBusinessLogic(db)
+	handler := handlers.InitHandler(bl)
+
 	app := &cli.App{}
 
 	app.Commands = []*cli.Command{
@@ -16,7 +22,7 @@ func main() {
 			Name:  "serve",
 			Usage: "start the HTTP service",
 			Action: func(*cli.Context) error {
-				handlers.Serve()
+				handlers.Serve(handler)
 				return nil
 			},
 		},
