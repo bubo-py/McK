@@ -1,0 +1,178 @@
+package handlers
+
+import (
+	"encoding/json"
+	"log"
+	"net/http"
+	"strconv"
+
+	"github.com/bubo-py/McK/service"
+	"github.com/bubo-py/McK/types"
+	"github.com/go-chi/chi"
+)
+
+type Handler struct {
+	bl service.BusinessLogicInterface
+}
+
+func InitHandler(bl service.BusinessLogicInterface) Handler {
+	var h Handler
+	h.bl = bl
+	return h
+}
+func (h Handler) GetEventsHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	var f types.Filters
+	query := r.URL.Query()
+
+	_, present := query["day"]
+	if present {
+		day, err := strconv.Atoi(query.Get("day"))
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			err = json.NewEncoder(w).Encode(err.Error())
+			if err != nil {
+				log.Println(err)
+			}
+		}
+		f.Day = day
+	}
+
+	_, present = query["month"]
+	if present {
+		month, err := strconv.Atoi(query.Get("month"))
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			err = json.NewEncoder(w).Encode(err.Error())
+			if err != nil {
+				log.Println(err)
+			}
+		}
+		f.Month = month
+	}
+
+	_, present = query["year"]
+	if present {
+		year, err := strconv.Atoi(query.Get("year"))
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			err = json.NewEncoder(w).Encode(err.Error())
+			if err != nil {
+				log.Println(err)
+			}
+		}
+		f.Year = year
+	}
+
+	events, err := h.bl.GetEvents(f)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		err = json.NewEncoder(w).Encode(err.Error())
+		if err != nil {
+			log.Println(err)
+		}
+		return
+	}
+
+	err = json.NewEncoder(w).Encode(events)
+	if err != nil {
+		log.Println(err)
+	}
+}
+
+func (h Handler) GetEventHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	id, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		log.Println(err)
+	}
+
+	event, err := h.bl.GetEvent(id)
+	if err != nil {
+		w.WriteHeader(http.StatusNotFound)
+		err = json.NewEncoder(w).Encode(err.Error())
+		if err != nil {
+			log.Println(err)
+		}
+		return
+	}
+
+	err = json.NewEncoder(w).Encode(event)
+	if err != nil {
+		log.Println(err)
+	}
+}
+
+func (h Handler) AddEventHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	var e types.Event
+	err := json.NewDecoder(r.Body).Decode(&e)
+	if err != nil {
+		log.Println(err)
+	}
+
+	err = h.bl.AddEvent(e)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		err = json.NewEncoder(w).Encode(err.Error())
+		if err != nil {
+			log.Println(err)
+		}
+		return
+	}
+
+	err = json.NewEncoder(w).Encode(e)
+	if err != nil {
+		log.Println(err)
+	}
+}
+
+func (h Handler) DeleteEventHandler(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		log.Println(err)
+	}
+
+	err = h.bl.DeleteEvent(id)
+	if err != nil {
+		w.WriteHeader(http.StatusNotFound)
+		err = json.NewEncoder(w).Encode(err.Error())
+		if err != nil {
+			log.Println(err)
+		}
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h Handler) UpdateEventHandler(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		log.Println(err)
+	}
+
+	var e types.Event
+	err = json.NewDecoder(r.Body).Decode(&e)
+	if err != nil {
+		log.Println(err)
+	}
+
+	err = h.bl.UpdateEvent(e, id)
+	if err != nil {
+		w.WriteHeader(http.StatusNotFound)
+		err = json.NewEncoder(w).Encode(err.Error())
+		if err != nil {
+			log.Println(err)
+		}
+		return
+	}
+
+	err = json.NewEncoder(w).Encode("Event updated")
+	if err != nil {
+		log.Println(err)
+	}
+}

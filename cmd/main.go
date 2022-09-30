@@ -2,14 +2,19 @@ package main
 
 import (
 	"log"
-	"net/http"
 	"os"
 
-	"github.com/go-chi/chi"
+	"github.com/bubo-py/McK/handlers"
+	"github.com/bubo-py/McK/repositories"
+	"github.com/bubo-py/McK/service"
 	"github.com/urfave/cli/v2"
 )
 
 func main() {
+	db := repositories.InitDatabase()
+	bl := service.InitBusinessLogic(db)
+	handler := handlers.InitHandler(bl)
+
 	app := &cli.App{}
 
 	app.Commands = []*cli.Command{
@@ -17,7 +22,7 @@ func main() {
 			Name:  "serve",
 			Usage: "start the HTTP service",
 			Action: func(*cli.Context) error {
-				serve()
+				handlers.Serve(handler)
 				return nil
 			},
 		},
@@ -27,16 +32,4 @@ func main() {
 		log.Fatal(err)
 	}
 
-}
-
-func serve() {
-	r := chi.NewRouter()
-
-	log.Println("Started an HTTP server on port 8080")
-
-	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("hi"))
-	})
-
-	log.Fatal(http.ListenAndServe(":8080", r))
 }
