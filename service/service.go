@@ -66,7 +66,11 @@ func (bl BusinessLogic) GetEvent(id int) (types.Event, error) {
 
 func (bl BusinessLogic) AddEvent(e types.Event) error {
 	err := validatePostRequest(e)
+	if err != nil {
+		return err
+	}
 
+	err = validateLength(e.Name)
 	if err != nil {
 		return err
 	}
@@ -80,12 +84,25 @@ func (bl BusinessLogic) DeleteEvent(id int) error {
 }
 
 func (bl BusinessLogic) UpdateEvent(e types.Event, id int) error {
+	err := validateLength(e.Name)
+	if err != nil {
+		return err
+	}
+
 	return bl.db.UpdateEvent(e, id)
 }
 
 func validatePostRequest(e types.Event) error {
 	if e.Name == "" || e.StartTime.IsZero() || e.EndTime.IsZero() {
 		return errors.New("invalid post request")
+	}
+
+	return nil
+}
+
+func validateLength(s string) error {
+	if len([]rune(s)) > 255 {
+		return errors.New("length should be less than 255 characters")
 	}
 
 	return nil
