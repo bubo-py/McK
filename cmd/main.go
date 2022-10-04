@@ -1,6 +1,8 @@
 package main
 
 import (
+	"context"
+	"fmt"
 	"log"
 	"os"
 
@@ -10,10 +12,21 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
+// go:embed
+//var d embed.FS
+
 func main() {
 	db := repositories.InitDatabase()
 	bl := service.InitBusinessLogic(db)
 	handler := handlers.InitHandler(bl)
+
+	ctx := context.Background()
+	pg := repositories.PostgresInit(ctx)
+
+	err := pg.Migrate(ctx, d, "../", "events")
+	if err != nil {
+		fmt.Println("error: ", err)
+	}
 
 	app := &cli.App{}
 
