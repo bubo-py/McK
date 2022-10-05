@@ -42,6 +42,8 @@ func (efs adapterFS) Glob(pattern string) (matches []string, err error) {
 	}
 
 	files := make([]string, 0, len(des))
+
+	pattern = "migrations/*/*.sql"
 	for _, e := range des {
 		matches, err := path.Match(pattern, e.Name())
 		// Pattern is malformed.
