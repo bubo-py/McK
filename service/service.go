@@ -75,7 +75,11 @@ func (bl BusinessLogic) AddEvent(e types.Event) error {
 		return err
 	}
 
-	bl.db.AddEvent(e)
+	err = bl.db.AddEvent(e)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 

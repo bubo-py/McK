@@ -28,10 +28,12 @@ func (db *Database) GetEvent(id int) (types.Event, error) {
 	return types.Event{}, errors.New("event with specified id not found")
 }
 
-func (db *Database) AddEvent(e types.Event) {
+func (db *Database) AddEvent(e types.Event) error {
 	db.ID += 1
 	e.ID = db.ID
 	db.Storage = append(db.Storage, e)
+
+	return nil
 }
 
 func (db *Database) DeleteEvent(id int) error {

@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"os"
 
@@ -12,9 +11,6 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-// go:embed
-//var d embed.FS
-
 func main() {
 	db := repositories.InitDatabase()
 	bl := service.InitBusinessLogic(db)
@@ -23,10 +19,18 @@ func main() {
 	ctx := context.Background()
 	pg := repositories.PostgresInit(ctx)
 
-	err := pg.Migrate(ctx, d, "../", "events")
+	err := repositories.RunMigration(ctx, pg)
 	if err != nil {
-		fmt.Println("error: ", err)
+		log.Fatal(err)
 	}
+
+	//pg.AddEvent(ctx, types.Event{
+	//	Name:        "the name",
+	//	StartTime:   time.Time{},
+	//	EndTime:     time.Time{},
+	//	Description: "test",
+	//	AlertTime:   time.Time{},
+	//})
 
 	app := &cli.App{}
 
