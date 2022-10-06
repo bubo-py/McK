@@ -1,13 +1,14 @@
 package repositories
 
 import (
+	"context"
 	"errors"
 
 	"github.com/bubo-py/McK/types"
 )
 
 type Database struct {
-	ID      int
+	ID      int64
 	Storage []types.Event
 }
 
@@ -15,11 +16,11 @@ func InitDatabase() *Database {
 	return &Database{}
 }
 
-func (db *Database) GetEvents() []types.Event {
-	return db.Storage
+func (db *Database) GetEvents(ctx context.Context) ([]types.Event, error) {
+	return db.Storage, nil
 }
 
-func (db *Database) GetEvent(id int) (types.Event, error) {
+func (db *Database) GetEvent(ctx context.Context, id int64) (types.Event, error) {
 	for i, event := range db.Storage {
 		if event.ID == id {
 			return db.Storage[i], nil
@@ -28,7 +29,7 @@ func (db *Database) GetEvent(id int) (types.Event, error) {
 	return types.Event{}, errors.New("event with specified id not found")
 }
 
-func (db *Database) AddEvent(e types.Event) error {
+func (db *Database) AddEvent(ctx context.Context, e types.Event) error {
 	db.ID += 1
 	e.ID = db.ID
 	db.Storage = append(db.Storage, e)
@@ -36,7 +37,7 @@ func (db *Database) AddEvent(e types.Event) error {
 	return nil
 }
 
-func (db *Database) DeleteEvent(id int) error {
+func (db *Database) DeleteEvent(ctx context.Context, id int64) error {
 	for i, event := range db.Storage {
 		if event.ID == id {
 			copy(db.Storage[i:], db.Storage[i+1:])
@@ -48,7 +49,7 @@ func (db *Database) DeleteEvent(id int) error {
 	return errors.New("event with specified id not found")
 }
 
-func (db *Database) UpdateEvent(e types.Event, id int) error {
+func (db *Database) UpdateEvent(ctx context.Context, e types.Event, id int64) error {
 	for i, event := range db.Storage {
 		if event.ID == id {
 			db.Storage[i].Name = e.Name
@@ -62,7 +63,7 @@ func (db *Database) UpdateEvent(e types.Event, id int) error {
 	return errors.New("event with specified id not found")
 }
 
-func (db *Database) GetEventsByDay(day int) []types.Event {
+func (db *Database) GetEventsByDay(ctx context.Context, day int) ([]types.Event, error) {
 	filtered := make([]types.Event, 0)
 
 	for _, event := range db.Storage {
@@ -70,10 +71,10 @@ func (db *Database) GetEventsByDay(day int) []types.Event {
 			filtered = append(filtered, event)
 		}
 	}
-	return filtered
+	return filtered, nil
 }
 
-func (db *Database) GetEventsByMonth(month int) []types.Event {
+func (db *Database) GetEventsByMonth(ctx context.Context, month int) ([]types.Event, error) {
 	filtered := make([]types.Event, 0)
 
 	for _, event := range db.Storage {
@@ -81,10 +82,10 @@ func (db *Database) GetEventsByMonth(month int) []types.Event {
 			filtered = append(filtered, event)
 		}
 	}
-	return filtered
+	return filtered, nil
 }
 
-func (db *Database) GetEventsByYear(year int) []types.Event {
+func (db *Database) GetEventsByYear(ctx context.Context, year int) ([]types.Event, error) {
 	filtered := make([]types.Event, 0)
 
 	for _, event := range db.Storage {
@@ -92,5 +93,5 @@ func (db *Database) GetEventsByYear(year int) []types.Event {
 			filtered = append(filtered, event)
 		}
 	}
-	return filtered
+	return filtered, nil
 }

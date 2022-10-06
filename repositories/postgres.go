@@ -3,7 +3,6 @@ package repositories
 import (
 	"context"
 	"embed"
-	"fmt"
 	"log"
 	"time"
 
@@ -76,22 +75,22 @@ func RunMigration(ctx context.Context, db PostgresDb) error {
 	return nil
 }
 
-func (pg PostgresDb) GetEvents(ctx context.Context) []types.Event {
+func (pg PostgresDb) GetEvents(ctx context.Context) ([]types.Event, error) {
 	var s []types.Event
 
 	q := sqlbuilder.Select("*").From("events")
 
 	rows, err := pg.pool.Query(ctx, q.String())
 	if err != nil {
-		log.Fatal(err)
+		return s, err
 	}
 
 	for rows.Next() {
 		values, err := rows.Values()
 		if err != nil {
-			log.Fatal(err)
+			return s, err
 		}
-		id := values[0].(int)
+		id := values[0].(int64)
 		name := values[1].(string)
 		startTime := values[2].(time.Time)
 		endTime := values[3].(time.Time)
@@ -109,27 +108,49 @@ func (pg PostgresDb) GetEvents(ctx context.Context) []types.Event {
 		s = append(s, e)
 	}
 
-	return s
+	return s, nil
 }
 
-func (pg PostgresDb) GetEvent(ctx context.Context, id int) types.Event {
+func (pg PostgresDb) GetEvent(ctx context.Context, id int64) (types.Event, error) {
 	sb := sqlbuilder.PostgreSQL.NewSelectBuilder()
+	var e types.Event
 
 	sb.Select("id", "name", "startTime", "endTime", "description", "alertTime")
 	sb.From("events")
 	sb.Where(sb.Equal("id", id))
 
 	q, args := sb.Build()
-	fmt.Println(q)
-	fmt.Println(args)
 
 	rows, err := pg.pool.Query(ctx, q, args[0])
 	if err != nil {
-		log.Fatal(err)
+		return e, err
 	}
-	fmt.Println(rows.Next())
 
-	return types.Event{}
+	for rows.Next() {
+
+		values, err := rows.Values()
+		if err != nil {
+			return e, err
+		}
+
+		id := values[0].(int64)
+		name := values[1].(string)
+		startTime := values[2].(time.Time)
+		endTime := values[3].(time.Time)
+		description := values[4].(string)
+		alertTime := values[5].(time.Time)
+
+		e.ID = id
+		e.Name = name
+		e.StartTime = startTime
+		e.EndTime = endTime
+		e.Description = description
+		e.AlertTime = alertTime
+
+		return e, nil
+	}
+
+	return e, nil
 }
 
 func (pg PostgresDb) AddEvent(ctx context.Context, e types.Event) error {
@@ -149,7 +170,7 @@ func (pg PostgresDb) AddEvent(ctx context.Context, e types.Event) error {
 	return nil
 }
 
-func (pg PostgresDb) DeleteEvent(ctx context.Context, id int) error {
+func (pg PostgresDb) DeleteEvent(ctx context.Context, id int64) error {
 	db := sqlbuilder.PostgreSQL.NewDeleteBuilder()
 
 	db.DeleteFrom("events")
@@ -165,7 +186,7 @@ func (pg PostgresDb) DeleteEvent(ctx context.Context, id int) error {
 	return nil
 }
 
-func (pg PostgresDb) UpdateEvent(ctx context.Context, e types.Event, id int) error {
+func (pg PostgresDb) UpdateEvent(ctx context.Context, e types.Event, id int64) error {
 	ub := sqlbuilder.PostgreSQL.NewUpdateBuilder()
 
 	ub.Update("events")
@@ -180,8 +201,6 @@ func (pg PostgresDb) UpdateEvent(ctx context.Context, e types.Event, id int) err
 	ub.Where(ub.Equal("id", id))
 
 	q, args := ub.Build()
-	fmt.Println(q)
-	fmt.Println(args)
 
 	_, err := pg.pool.Exec(ctx, q, args[0], args[1], args[2], args[3], args[4], args[5])
 	if err != nil {
@@ -189,4 +208,130 @@ func (pg PostgresDb) UpdateEvent(ctx context.Context, e types.Event, id int) err
 	}
 
 	return nil
+}
+
+func (pg PostgresDb) GetEventsByDay(ctx context.Context, day int) ([]types.Event, error) {
+	filtered := make([]types.Event, 0)
+
+	sb := sqlbuilder.PostgreSQL.NewSelectBuilder()
+
+	sb.Select("id", "name", "startTime", "endTime", "description", "alertTime")
+	sb.From("events")
+	sb.Where(sb.Equal("EXTRACT(day FROM startTime)", day))
+
+	q, args := sb.Build()
+
+	rows, err := pg.pool.Query(ctx, q, args[0])
+	if err != nil {
+		return filtered, err
+	}
+
+	for rows.Next() {
+		values, err := rows.Values()
+		if err != nil {
+			return filtered, err
+		}
+		id := values[0].(int64)
+		name := values[1].(string)
+		startTime := values[2].(time.Time)
+		endTime := values[3].(time.Time)
+		description := values[4].(string)
+		alertTime := values[5].(time.Time)
+
+		e := types.Event{
+			ID:          id,
+			Name:        name,
+			StartTime:   startTime,
+			EndTime:     endTime,
+			Description: description,
+			AlertTime:   alertTime,
+		}
+		filtered = append(filtered, e)
+	}
+
+	return filtered, nil
+}
+
+func (pg PostgresDb) GetEventsByMonth(ctx context.Context, month int) ([]types.Event, error) {
+	filtered := make([]types.Event, 0)
+
+	sb := sqlbuilder.PostgreSQL.NewSelectBuilder()
+
+	sb.Select("id", "name", "startTime", "endTime", "description", "alertTime")
+	sb.From("events")
+	sb.Where(sb.Equal("EXTRACT(month FROM startTime)", month))
+
+	q, args := sb.Build()
+
+	rows, err := pg.pool.Query(ctx, q, args[0])
+	if err != nil {
+		return filtered, err
+	}
+
+	for rows.Next() {
+		values, err := rows.Values()
+		if err != nil {
+			return filtered, err
+		}
+		id := values[0].(int64)
+		name := values[1].(string)
+		startTime := values[2].(time.Time)
+		endTime := values[3].(time.Time)
+		description := values[4].(string)
+		alertTime := values[5].(time.Time)
+
+		e := types.Event{
+			ID:          id,
+			Name:        name,
+			StartTime:   startTime,
+			EndTime:     endTime,
+			Description: description,
+			AlertTime:   alertTime,
+		}
+		filtered = append(filtered, e)
+	}
+
+	return filtered, nil
+}
+
+func (pg PostgresDb) GetEventsByYear(ctx context.Context, year int) ([]types.Event, error) {
+	filtered := make([]types.Event, 0)
+
+	sb := sqlbuilder.PostgreSQL.NewSelectBuilder()
+
+	sb.Select("id", "name", "startTime", "endTime", "description", "alertTime")
+	sb.From("events")
+	sb.Where(sb.Equal("EXTRACT(year FROM startTime)", year))
+
+	q, args := sb.Build()
+
+	rows, err := pg.pool.Query(ctx, q, args[0])
+	if err != nil {
+		return filtered, err
+	}
+
+	for rows.Next() {
+		values, err := rows.Values()
+		if err != nil {
+			return filtered, err
+		}
+		id := values[0].(int64)
+		name := values[1].(string)
+		startTime := values[2].(time.Time)
+		endTime := values[3].(time.Time)
+		description := values[4].(string)
+		alertTime := values[5].(time.Time)
+
+		e := types.Event{
+			ID:          id,
+			Name:        name,
+			StartTime:   startTime,
+			EndTime:     endTime,
+			Description: description,
+			AlertTime:   alertTime,
+		}
+		filtered = append(filtered, e)
+	}
+
+	return filtered, nil
 }

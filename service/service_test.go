@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"reflect"
@@ -10,6 +11,8 @@ import (
 	"github.com/bubo-py/McK/repositories"
 	"github.com/bubo-py/McK/types"
 )
+
+var ctx context.Context
 
 func TestGetEvents(t *testing.T) {
 	ti := time.Date(2015, 5, 15, 20, 30, 0, 0, time.Local)
@@ -87,22 +90,22 @@ func TestGetEvents(t *testing.T) {
 				EndTime:   ti3,
 			}
 
-			err := bl.AddEvent(event)
+			err := bl.AddEvent(ctx, event)
 			if err != nil {
 				t.Error(err)
 			}
 
-			err = bl.AddEvent(event2)
+			err = bl.AddEvent(ctx, event2)
 			if err != nil {
 				t.Error(err)
 			}
 
-			err = bl.AddEvent(event3)
+			err = bl.AddEvent(ctx, event3)
 			if err != nil {
 				t.Error(err)
 			}
 
-			output, err := bl.GetEvents(tc.filters)
+			output, err := bl.GetEvents(ctx, tc.filters)
 			if err != nil && tc.expError != nil {
 				if err.Error() != tc.expError.Error() {
 					t.Errorf("Failed to fetch events: got error: %v, expected: %v", err, tc.expError)
@@ -136,12 +139,12 @@ func TestAddEvent(t *testing.T) {
 		EndTime:   ti,
 	}
 
-	err := bl.AddEvent(event)
+	err := bl.AddEvent(ctx, event)
 	if err != nil {
 		t.Error(err)
 	}
 
-	addedEvent, err := bl.GetEvent(1)
+	addedEvent, err := bl.GetEvent(ctx, 1)
 	if err != nil {
 		t.Error(err)
 	}
@@ -149,7 +152,7 @@ func TestAddEvent(t *testing.T) {
 		t.Errorf("Failed to add an event: expected name: %s, got: %s", event.Name, addedEvent.Name)
 	}
 
-	err = bl.AddEvent(event2)
+	err = bl.AddEvent(ctx, event2)
 	if err != nil {
 		if err.Error() != "invalid post request" {
 			t.Errorf("Failed to correctly validate an event, expected: invalid post request, got: %v",

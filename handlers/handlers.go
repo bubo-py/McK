@@ -20,6 +20,7 @@ func InitHandler(bl service.BusinessLogicInterface) Handler {
 	h.bl = bl
 	return h
 }
+
 func (h Handler) GetEventsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -65,7 +66,7 @@ func (h Handler) GetEventsHandler(w http.ResponseWriter, r *http.Request) {
 		f.Year = year
 	}
 
-	events, err := h.bl.GetEvents(f)
+	events, err := h.bl.GetEvents(r.Context(), f)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		err = json.NewEncoder(w).Encode(err.Error())
@@ -89,7 +90,7 @@ func (h Handler) GetEventHandler(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 	}
 
-	event, err := h.bl.GetEvent(id)
+	event, err := h.bl.GetEvent(r.Context(), int64(id))
 	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
 		err = json.NewEncoder(w).Encode(err.Error())
@@ -114,7 +115,7 @@ func (h Handler) AddEventHandler(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 	}
 
-	err = h.bl.AddEvent(e)
+	err = h.bl.AddEvent(r.Context(), e)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		err = json.NewEncoder(w).Encode(err.Error())
@@ -136,7 +137,7 @@ func (h Handler) DeleteEventHandler(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 	}
 
-	err = h.bl.DeleteEvent(id)
+	err = h.bl.DeleteEvent(r.Context(), int64(id))
 	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
 		err = json.NewEncoder(w).Encode(err.Error())
@@ -161,7 +162,7 @@ func (h Handler) UpdateEventHandler(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 	}
 
-	err = h.bl.UpdateEvent(e, id)
+	err = h.bl.UpdateEvent(r.Context(), e, int64(id))
 	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
 		err = json.NewEncoder(w).Encode(err.Error())

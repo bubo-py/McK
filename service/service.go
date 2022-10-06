@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"errors"
 
 	"github.com/bubo-py/McK/repositories"
@@ -8,11 +9,11 @@ import (
 )
 
 type BusinessLogicInterface interface {
-	GetEvents(f types.Filters) ([]types.Event, error)
-	GetEvent(id int) (types.Event, error)
-	AddEvent(e types.Event) error
-	DeleteEvent(id int) error
-	UpdateEvent(e types.Event, id int) error
+	GetEvents(ctx context.Context, f types.Filters) ([]types.Event, error)
+	GetEvent(ctx context.Context, id int64) (types.Event, error)
+	AddEvent(ctx context.Context, e types.Event) error
+	DeleteEvent(ctx context.Context, id int64) error
+	UpdateEvent(ctx context.Context, e types.Event, id int64) error
 }
 
 type BusinessLogic struct {
@@ -25,11 +26,16 @@ func InitBusinessLogic(db repositories.DatabaseRepository) BusinessLogic {
 	return bl
 }
 
-func (bl BusinessLogic) GetEvents(f types.Filters) ([]types.Event, error) {
+func (bl BusinessLogic) GetEvents(ctx context.Context, f types.Filters) ([]types.Event, error) {
 	var s []types.Event
 
 	if f.Day == 0 && f.Month == 0 && f.Year == 0 {
-		s = append(s, bl.db.GetEvents()...)
+		e, err := bl.db.GetEvents(ctx)
+		if err != nil {
+			return s, err
+		}
+
+		s = append(s, e...)
 		return s, nil
 	}
 
@@ -38,7 +44,12 @@ func (bl BusinessLogic) GetEvents(f types.Filters) ([]types.Event, error) {
 			return s, errors.New("invalid day value")
 		}
 
-		s = append(s, bl.db.GetEventsByDay(f.Day)...)
+		e, err := bl.db.GetEventsByDay(ctx, f.Day)
+		if err != nil {
+			return s, err
+		}
+
+		s = append(s, e...)
 	}
 
 	if f.Month != 0 {
@@ -46,7 +57,12 @@ func (bl BusinessLogic) GetEvents(f types.Filters) ([]types.Event, error) {
 			return s, errors.New("invalid month value")
 		}
 
-		s = append(s, bl.db.GetEventsByMonth(f.Month)...)
+		e, err := bl.db.GetEventsByMonth(ctx, f.Month)
+		if err != nil {
+			return s, err
+		}
+
+		s = append(s, e...)
 	}
 
 	if f.Year != 0 {
@@ -54,17 +70,22 @@ func (bl BusinessLogic) GetEvents(f types.Filters) ([]types.Event, error) {
 			return s, errors.New("invalid year value")
 		}
 
-		s = append(s, bl.db.GetEventsByYear(f.Year)...)
+		e, err := bl.db.GetEventsByYear(ctx, f.Year)
+		if err != nil {
+			return s, err
+		}
+
+		s = append(s, e...)
 	}
 
 	return s, nil
 }
 
-func (bl BusinessLogic) GetEvent(id int) (types.Event, error) {
-	return bl.db.GetEvent(id)
+func (bl BusinessLogic) GetEvent(ctx context.Context, id int64) (types.Event, error) {
+	return bl.db.GetEvent(ctx, id)
 }
 
-func (bl BusinessLogic) AddEvent(e types.Event) error {
+func (bl BusinessLogic) AddEvent(ctx context.Context, e types.Event) error {
 	err := validatePostRequest(e)
 	if err != nil {
 		return err
@@ -75,7 +96,7 @@ func (bl BusinessLogic) AddEvent(e types.Event) error {
 		return err
 	}
 
-	err = bl.db.AddEvent(e)
+	err = bl.db.AddEvent(ctx, e)
 	if err != nil {
 		return err
 	}
@@ -83,17 +104,17 @@ func (bl BusinessLogic) AddEvent(e types.Event) error {
 	return nil
 }
 
-func (bl BusinessLogic) DeleteEvent(id int) error {
-	return bl.db.DeleteEvent(id)
+func (bl BusinessLogic) DeleteEvent(ctx context.Context, id int64) error {
+	return bl.db.DeleteEvent(ctx, id)
 }
 
-func (bl BusinessLogic) UpdateEvent(e types.Event, id int) error {
+func (bl BusinessLogic) UpdateEvent(ctx context.Context, e types.Event, id int64) error {
 	err := validateLength(e.Name)
 	if err != nil {
 		return err
 	}
 
-	return bl.db.UpdateEvent(e, id)
+	return bl.db.UpdateEvent(ctx, e, id)
 }
 
 func validatePostRequest(e types.Event) error {
