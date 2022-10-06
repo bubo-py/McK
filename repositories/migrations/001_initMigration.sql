@@ -1,10 +1,10 @@
 create table events (
-    id serial primary key not null,
-    name varchar(255) not null,
-    startTime timestamp not null,
-    endTime timestamp not null,
-    description varchar(510),
-    alertTime timestamp
+    id BIGSERIAL PRIMARY KEY NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    startTime TIMESTAMP NOT NULL,
+    endTime TIMESTAMP NOT NULL,
+    description VARCHAR(510),
+    alertTime TIMESTAMP
 );
 
 ---- create above / drop below ----
