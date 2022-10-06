@@ -5,32 +5,12 @@ import (
 	"log"
 	"os"
 
-	"github.com/bubo-py/McK/handlers"
-	"github.com/bubo-py/McK/repositories"
-	"github.com/bubo-py/McK/service"
+	"github.com/bubo-py/McK/serve"
 	"github.com/urfave/cli/v2"
 )
 
 func main() {
-	db := repositories.InitDatabase()
-	bl := service.InitBusinessLogic(db)
-	handler := handlers.InitHandler(bl)
-
 	ctx := context.Background()
-	pg := repositories.PostgresInit(ctx)
-
-	err := repositories.RunMigration(ctx, pg)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	//pg.AddEvent(ctx, types.Event{
-	//	Name:        "the name",
-	//	StartTime:   time.Time{},
-	//	EndTime:     time.Time{},
-	//	Description: "test",
-	//	AlertTime:   time.Time{},
-	//})
 
 	app := &cli.App{}
 
@@ -39,7 +19,7 @@ func main() {
 			Name:  "serve",
 			Usage: "start the HTTP service",
 			Action: func(*cli.Context) error {
-				handlers.Serve(handler)
+				serve.Serve(ctx)
 				return nil
 			},
 		},
