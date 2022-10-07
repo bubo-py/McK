@@ -1,4 +1,4 @@
-package repositories
+package postgres
 
 import (
 	"context"
@@ -19,19 +19,19 @@ type PostgresDb struct {
 	pool *pgxpool.Pool
 }
 
-func PostgresInit(ctx context.Context) PostgresDb {
+func PostgresInit(ctx context.Context) (PostgresDb, error) {
 	var pg PostgresDb
 	dbUrl := "postgres://postgres:12345@localhost:5432/postgres"
 
 	dbPool, err := pgxpool.Connect(ctx, dbUrl)
 	if err != nil {
-		log.Println(err)
+		return pg, err
 	}
 
 	//defer dbPool.Close()
 	pg.pool = dbPool
 
-	return pg
+	return pg, nil
 }
 
 func (pg PostgresDb) migrate(ctx context.Context, mFS embed.FS, rootDir, table string) error {
@@ -72,6 +72,7 @@ func RunMigration(ctx context.Context, db PostgresDb) error {
 		return err
 	}
 
+	log.Println("Migrations run correctly")
 	return nil
 }
 
@@ -115,13 +116,14 @@ func (pg PostgresDb) GetEvent(ctx context.Context, id int64) (types.Event, error
 	sb := sqlbuilder.PostgreSQL.NewSelectBuilder()
 	var e types.Event
 
-	sb.Select("id", "name", "startTime", "endTime", "description", "alertTime")
+	sb.Select("id", "name", "startTime", "endTime", "description", "alertTime", "EXISTS(select 1 from events)")
 	sb.From("events")
 	sb.Where(sb.Equal("id", id))
 
 	q, args := sb.Build()
 
-	rows, err := pg.pool.Query(ctx, q, args[0])
+	rows, err := pg.pool.Query(ctx, q, args...)
+
 	if err != nil {
 		return e, err
 	}
@@ -162,7 +164,7 @@ func (pg PostgresDb) AddEvent(ctx context.Context, e types.Event) error {
 
 	q, args := ib.Build()
 
-	_, err := pg.pool.Exec(ctx, q, args[0], args[1], args[2], args[3], args[4])
+	_, err := pg.pool.Exec(ctx, q, args...)
 	if err != nil {
 		return err
 	}
@@ -202,7 +204,7 @@ func (pg PostgresDb) UpdateEvent(ctx context.Context, e types.Event, id int64) e
 
 	q, args := ub.Build()
 
-	_, err := pg.pool.Exec(ctx, q, args[0], args[1], args[2], args[3], args[4], args[5])
+	_, err := pg.pool.Exec(ctx, q, args...)
 	if err != nil {
 		return err
 	}
@@ -221,7 +223,7 @@ func (pg PostgresDb) GetEventsByDay(ctx context.Context, day int) ([]types.Event
 
 	q, args := sb.Build()
 
-	rows, err := pg.pool.Query(ctx, q, args[0])
+	rows, err := pg.pool.Query(ctx, q, args...)
 	if err != nil {
 		return filtered, err
 	}

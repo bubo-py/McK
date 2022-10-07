@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/bubo-py/McK/repositories"
+	"github.com/bubo-py/McK/repositories/memoryStorage"
 	"github.com/bubo-py/McK/types"
 )
 
@@ -68,7 +68,7 @@ func TestGetEvents(t *testing.T) {
 	for i, tc := range testCases {
 		testName := fmt.Sprintf("Test %d", i)
 		t.Run(testName, func(t *testing.T) {
-			db := repositories.InitDatabase()
+			db := memoryStorage.InitDatabase()
 			bl := InitBusinessLogic(db)
 
 			event := types.Event{
@@ -121,7 +121,7 @@ func TestGetEvents(t *testing.T) {
 }
 
 func TestAddEvent(t *testing.T) {
-	db := repositories.InitDatabase()
+	db := memoryStorage.InitDatabase()
 	bl := InitBusinessLogic(db)
 	ti := time.Date(2020, 5, 15, 20, 30, 0, 0, time.Local)
 

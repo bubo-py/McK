@@ -1,4 +1,4 @@
-package repositories
+package memoryStorage
 
 import (
 	"context"
