@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/bubo-py/McK/types"
+	"github.com/georgysavva/scany/pgxscan"
 	"github.com/huandu/go-sqlbuilder"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/jackc/tern/migrate"
@@ -19,10 +20,10 @@ var f embed.FS
 type eventDb struct {
 	ID          int64     `db:"id"`
 	Name        string    `db:"name"`
-	StartTime   time.Time `db:"startTime"` // format: 2022-09-14T09:00:00.000Z
-	EndTime     time.Time `db:"endTime"`   // RFC 3339, section 5.6
+	StartTime   time.Time `db:"starttime"` // format: 2022-09-14T09:00:00.000Z
+	EndTime     time.Time `db:"endtime"`   // RFC 3339, section 5.6
 	Description string    `db:"description,omitempty"`
-	AlertTime   time.Time `db:"alertTime,omitempty"`
+	AlertTime   time.Time `db:"alerttime,omitempty"`
 }
 
 type PostgresDb struct {
@@ -88,35 +89,17 @@ func RunMigration(ctx context.Context, db PostgresDb) error {
 
 func (pg PostgresDb) GetEvents(ctx context.Context) ([]types.Event, error) {
 	var s []types.Event
+	var events []*eventDb
 
 	q := sqlbuilder.Select("*").From("events")
 
-	rows, err := pg.pool.Query(ctx, q.String())
+	err := pgxscan.Select(ctx, pg.pool, &events, q.String())
 	if err != nil {
 		return s, err
 	}
 
-	for rows.Next() {
-		values, err := rows.Values()
-		if err != nil {
-			return s, err
-		}
-		id := values[0].(int64)
-		name := values[1].(string)
-		startTime := values[2].(time.Time)
-		endTime := values[3].(time.Time)
-		description := values[4].(string)
-		alertTime := values[5].(time.Time)
-
-		e := types.Event{
-			ID:          id,
-			Name:        name,
-			StartTime:   startTime,
-			EndTime:     endTime,
-			Description: description,
-			AlertTime:   alertTime,
-		}
-		s = append(s, e)
+	for _, event := range events {
+		s = append(s, types.Event(*event))
 	}
 
 	return s, nil
@@ -124,7 +107,7 @@ func (pg PostgresDb) GetEvents(ctx context.Context) ([]types.Event, error) {
 
 func (pg PostgresDb) GetEvent(ctx context.Context, id int64) (types.Event, error) {
 	sb := sqlbuilder.PostgreSQL.NewSelectBuilder()
-	var e types.Event
+	var e eventDb
 
 	sb.Select("id", "name", "startTime", "endTime", "description", "alertTime")
 	sb.From("events")
@@ -132,41 +115,16 @@ func (pg PostgresDb) GetEvent(ctx context.Context, id int64) (types.Event, error
 
 	q, args := sb.Build()
 
-	rows, err := pg.pool.Query(ctx, q, args...)
-
+	err := pgxscan.Get(ctx, pg.pool, &e, q, args[0])
 	if err != nil {
-		return e, err
-	}
-
-	for rows.Next() {
-
-		values, err := rows.Values()
-		if err != nil {
-			return e, err
-		}
-
-		id := values[0].(int64)
-		name := values[1].(string)
-		startTime := values[2].(time.Time)
-		endTime := values[3].(time.Time)
-		description := values[4].(string)
-		alertTime := values[5].(time.Time)
-
-		e.ID = id
-		e.Name = name
-		e.StartTime = startTime
-		e.EndTime = endTime
-		e.Description = description
-		e.AlertTime = alertTime
-
-		return e, nil
+		return types.Event(e), err
 	}
 
 	if e.ID == 0 {
-		return e, errors.New("event with specified id not found")
+		return types.Event(e), errors.New("event with specified id not found")
 	}
 
-	return e, nil
+	return types.Event(e), nil
 }
 
 func (pg PostgresDb) AddEvent(ctx context.Context, e types.Event) error {
@@ -188,35 +146,17 @@ func (pg PostgresDb) AddEvent(ctx context.Context, e types.Event) error {
 
 func (pg PostgresDb) DeleteEvent(ctx context.Context, id int64) error {
 	db := sqlbuilder.PostgreSQL.NewDeleteBuilder()
-	sb := sqlbuilder.PostgreSQL.NewSelectBuilder()
-	exists := false
 
-	sb.Select("EXISTS(select 1 from events)")
-	sb.From("events")
-	sb.Where(sb.Equal("id", id))
-
-	q, args := sb.Build()
-
-	rows, err := pg.pool.Query(ctx, q, args...)
-
+	exists, err := pg.exists(ctx, id)
 	if err != nil {
 		return err
-	}
-
-	for rows.Next() {
-
-		values, err := rows.Values()
-		if err != nil {
-			return err
-		}
-		exists = values[0].(bool)
 	}
 
 	if exists == true {
 		db.DeleteFrom("events")
 		db.Where(db.Equal("id", id))
 
-		q, args = db.Build()
+		q, args := db.Build()
 
 		_, err = pg.pool.Exec(ctx, q, args...)
 		if err != nil {
@@ -232,28 +172,9 @@ func (pg PostgresDb) DeleteEvent(ctx context.Context, id int64) error {
 func (pg PostgresDb) UpdateEvent(ctx context.Context, e types.Event, id int64) error {
 	ub := sqlbuilder.PostgreSQL.NewUpdateBuilder()
 
-	sb := sqlbuilder.PostgreSQL.NewSelectBuilder()
-	exists := false
-
-	sb.Select("EXISTS(select 1 from events)")
-	sb.From("events")
-	sb.Where(sb.Equal("id", id))
-
-	q, args := sb.Build()
-
-	rows, err := pg.pool.Query(ctx, q, args...)
-
+	exists, err := pg.exists(ctx, id)
 	if err != nil {
 		return err
-	}
-
-	for rows.Next() {
-
-		values, err := rows.Values()
-		if err != nil {
-			return err
-		}
-		exists = values[0].(bool)
 	}
 
 	if exists == true {
@@ -405,4 +326,32 @@ func (pg PostgresDb) GetEventsByYear(ctx context.Context, year int) ([]types.Eve
 	}
 
 	return filtered, nil
+}
+
+func (pg PostgresDb) exists(ctx context.Context, id int64) (bool, error) {
+	sb := sqlbuilder.PostgreSQL.NewSelectBuilder()
+	var exists bool
+
+	sb.Select("EXISTS(select 1 from events)")
+	sb.From("events")
+	sb.Where(sb.Equal("id", id))
+
+	q, args := sb.Build()
+
+	rows, err := pg.pool.Query(ctx, q, args...)
+
+	if err != nil {
+		return exists, err
+	}
+
+	for rows.Next() {
+
+		values, err := rows.Values()
+		if err != nil {
+			return exists, err
+		}
+		exists = values[0].(bool)
+	}
+
+	return exists, nil
 }
