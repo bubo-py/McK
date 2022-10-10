@@ -203,7 +203,8 @@ func (pg PostgresDb) UpdateEvent(ctx context.Context, e types.Event, id int64) e
 }
 
 func (pg PostgresDb) GetEventsByDay(ctx context.Context, day int) ([]types.Event, error) {
-	filtered := make([]types.Event, 0)
+	var filtered []types.Event
+	var events []*eventDb
 
 	sb := sqlbuilder.PostgreSQL.NewSelectBuilder()
 
@@ -213,39 +214,21 @@ func (pg PostgresDb) GetEventsByDay(ctx context.Context, day int) ([]types.Event
 
 	q, args := sb.Build()
 
-	rows, err := pg.pool.Query(ctx, q, args...)
+	err := pgxscan.Select(ctx, pg.pool, &events, q, args[0])
 	if err != nil {
 		return filtered, err
 	}
 
-	for rows.Next() {
-		values, err := rows.Values()
-		if err != nil {
-			return filtered, err
-		}
-		id := values[0].(int64)
-		name := values[1].(string)
-		startTime := values[2].(time.Time)
-		endTime := values[3].(time.Time)
-		description := values[4].(string)
-		alertTime := values[5].(time.Time)
-
-		e := types.Event{
-			ID:          id,
-			Name:        name,
-			StartTime:   startTime,
-			EndTime:     endTime,
-			Description: description,
-			AlertTime:   alertTime,
-		}
-		filtered = append(filtered, e)
+	for _, event := range events {
+		filtered = append(filtered, types.Event(*event))
 	}
 
 	return filtered, nil
 }
 
 func (pg PostgresDb) GetEventsByMonth(ctx context.Context, month int) ([]types.Event, error) {
-	filtered := make([]types.Event, 0)
+	var filtered []types.Event
+	var events []*eventDb
 
 	sb := sqlbuilder.PostgreSQL.NewSelectBuilder()
 
@@ -255,39 +238,21 @@ func (pg PostgresDb) GetEventsByMonth(ctx context.Context, month int) ([]types.E
 
 	q, args := sb.Build()
 
-	rows, err := pg.pool.Query(ctx, q, args[0])
+	err := pgxscan.Select(ctx, pg.pool, &events, q, args[0])
 	if err != nil {
 		return filtered, err
 	}
 
-	for rows.Next() {
-		values, err := rows.Values()
-		if err != nil {
-			return filtered, err
-		}
-		id := values[0].(int64)
-		name := values[1].(string)
-		startTime := values[2].(time.Time)
-		endTime := values[3].(time.Time)
-		description := values[4].(string)
-		alertTime := values[5].(time.Time)
-
-		e := types.Event{
-			ID:          id,
-			Name:        name,
-			StartTime:   startTime,
-			EndTime:     endTime,
-			Description: description,
-			AlertTime:   alertTime,
-		}
-		filtered = append(filtered, e)
+	for _, event := range events {
+		filtered = append(filtered, types.Event(*event))
 	}
 
 	return filtered, nil
 }
 
 func (pg PostgresDb) GetEventsByYear(ctx context.Context, year int) ([]types.Event, error) {
-	filtered := make([]types.Event, 0)
+	var filtered []types.Event
+	var events []*eventDb
 
 	sb := sqlbuilder.PostgreSQL.NewSelectBuilder()
 
@@ -297,32 +262,13 @@ func (pg PostgresDb) GetEventsByYear(ctx context.Context, year int) ([]types.Eve
 
 	q, args := sb.Build()
 
-	rows, err := pg.pool.Query(ctx, q, args[0])
+	err := pgxscan.Select(ctx, pg.pool, &events, q, args[0])
 	if err != nil {
 		return filtered, err
 	}
 
-	for rows.Next() {
-		values, err := rows.Values()
-		if err != nil {
-			return filtered, err
-		}
-		id := values[0].(int64)
-		name := values[1].(string)
-		startTime := values[2].(time.Time)
-		endTime := values[3].(time.Time)
-		description := values[4].(string)
-		alertTime := values[5].(time.Time)
-
-		e := types.Event{
-			ID:          id,
-			Name:        name,
-			StartTime:   startTime,
-			EndTime:     endTime,
-			Description: description,
-			AlertTime:   alertTime,
-		}
-		filtered = append(filtered, e)
+	for _, event := range events {
+		filtered = append(filtered, types.Event(*event))
 	}
 
 	return filtered, nil
