@@ -72,6 +72,11 @@ func TestPostgresDb_GetEvent(t *testing.T) {
 	if e.ID != id || e.StartTime.Year() != 2010 {
 		t.Error("Failed to fetch an event with given id")
 	}
+
+	err = db.UpdateEvent(ctx, event, 20)
+	if err == nil {
+		t.Errorf("Error is nil, should have: %s", "event with specified id not found")
+	}
 }
 
 func TestPostgresDb_DeleteEvent(t *testing.T) {
@@ -115,6 +120,11 @@ func TestPostgresDb_DeleteEvent(t *testing.T) {
 	err = db.DeleteEvent(ctx, 2)
 	if err != nil {
 		t.Error(err)
+	}
+
+	err = db.DeleteEvent(ctx, 2)
+	if err == nil {
+		t.Errorf("Error is nil, should have: %s", "event with specified id not found")
 	}
 
 	e, err := db.GetEvents(ctx)
