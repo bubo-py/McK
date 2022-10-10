@@ -120,10 +120,12 @@ func (pg PostgresDb) GetEvent(ctx context.Context, id int64) (types.Event, error
 
 		q, args := sb.Build()
 
-		err := pgxscan.Get(ctx, pg.pool, &e, q, args[0])
+		err := pgxscan.Get(ctx, pg.pool, &e, q, args...)
 		if err != nil {
 			return types.Event(e), err
 		}
+
+		return types.Event(e), nil
 	}
 
 	return types.Event(e), errors.New("event with specified id not found")
@@ -216,7 +218,7 @@ func (pg PostgresDb) GetEventsByDay(ctx context.Context, day int) ([]types.Event
 
 	q, args := sb.Build()
 
-	err := pgxscan.Select(ctx, pg.pool, &events, q, args[0])
+	err := pgxscan.Select(ctx, pg.pool, &events, q, args...)
 	if err != nil {
 		return filtered, err
 	}
@@ -240,7 +242,7 @@ func (pg PostgresDb) GetEventsByMonth(ctx context.Context, month int) ([]types.E
 
 	q, args := sb.Build()
 
-	err := pgxscan.Select(ctx, pg.pool, &events, q, args[0])
+	err := pgxscan.Select(ctx, pg.pool, &events, q, args...)
 	if err != nil {
 		return filtered, err
 	}
@@ -264,7 +266,7 @@ func (pg PostgresDb) GetEventsByYear(ctx context.Context, year int) ([]types.Eve
 
 	q, args := sb.Build()
 
-	err := pgxscan.Select(ctx, pg.pool, &events, q, args[0])
+	err := pgxscan.Select(ctx, pg.pool, &events, q, args...)
 	if err != nil {
 		return filtered, err
 	}

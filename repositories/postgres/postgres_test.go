@@ -33,6 +33,7 @@ func TestMain(m *testing.M) {
 
 func TestPostgresDb_GetEvent(t *testing.T) {
 	ti := time.Date(2010, 9, 16, 20, 30, 0, 0, time.Local)
+	ti2 := time.Date(2022, 5, 15, 20, 30, 0, 0, time.Local)
 
 	ctx := context.Background()
 	db, err := PostgresInit(ctx, os.Getenv("PGURL"))
@@ -52,10 +53,10 @@ func TestPostgresDb_GetEvent(t *testing.T) {
 	event2 := types.Event{
 		ID:          200,
 		Name:        "Second meeting",
-		StartTime:   ti,
-		EndTime:     ti,
+		StartTime:   ti2,
+		EndTime:     ti2,
 		Description: "A meeting",
-		AlertTime:   ti,
+		AlertTime:   ti2,
 	}
 
 	err = db.AddEvent(ctx, event)
@@ -68,7 +69,7 @@ func TestPostgresDb_GetEvent(t *testing.T) {
 		t.Error(err)
 	}
 
-	var id int64 = 2
+	var id int64 = 1
 	e, err := db.GetEvent(ctx, id)
 	if err != nil {
 		t.Error(err)
@@ -85,8 +86,8 @@ func TestPostgresDb_GetEvent(t *testing.T) {
 }
 
 func TestPostgresDb_DeleteEvent(t *testing.T) {
-	ti := time.Date(2022, 9, 16, 20, 30, 0, 0, time.Local)
-	ti2 := time.Date(2010, 9, 16, 20, 30, 0, 0, time.Local)
+	ti := time.Date(2010, 9, 16, 20, 30, 0, 0, time.Local)
+	ti2 := time.Date(2022, 9, 16, 20, 30, 0, 0, time.Local)
 
 	ctx := context.Background()
 	db, err := PostgresInit(ctx, os.Getenv("PGURL"))
