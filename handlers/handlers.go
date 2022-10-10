@@ -85,12 +85,12 @@ func (h Handler) GetEventsHandler(w http.ResponseWriter, r *http.Request) {
 func (h Handler) GetEventHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	id, err := strconv.Atoi(chi.URLParam(r, "id"))
+	id, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
 	if err != nil {
 		log.Println(err)
 	}
 
-	event, err := h.bl.GetEvent(r.Context(), int64(id))
+	event, err := h.bl.GetEvent(r.Context(), id)
 	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
 		err = json.NewEncoder(w).Encode(err.Error())
@@ -132,12 +132,12 @@ func (h Handler) AddEventHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h Handler) DeleteEventHandler(w http.ResponseWriter, r *http.Request) {
-	id, err := strconv.Atoi(chi.URLParam(r, "id"))
+	id, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
 	if err != nil {
 		log.Println(err)
 	}
 
-	err = h.bl.DeleteEvent(r.Context(), int64(id))
+	err = h.bl.DeleteEvent(r.Context(), id)
 	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
 		err = json.NewEncoder(w).Encode(err.Error())
@@ -151,7 +151,7 @@ func (h Handler) DeleteEventHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h Handler) UpdateEventHandler(w http.ResponseWriter, r *http.Request) {
-	id, err := strconv.Atoi(chi.URLParam(r, "id"))
+	id, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
 	if err != nil {
 		log.Println(err)
 	}
@@ -162,7 +162,7 @@ func (h Handler) UpdateEventHandler(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 	}
 
-	err = h.bl.UpdateEvent(r.Context(), e, int64(id))
+	err = h.bl.UpdateEvent(r.Context(), e, id)
 	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
 		err = json.NewEncoder(w).Encode(err.Error())

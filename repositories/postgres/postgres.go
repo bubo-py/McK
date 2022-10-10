@@ -30,11 +30,10 @@ type PostgresDb struct {
 	pool *pgxpool.Pool
 }
 
-func PostgresInit(ctx context.Context) (PostgresDb, error) {
+func PostgresInit(ctx context.Context, connString string) (PostgresDb, error) {
 	var pg PostgresDb
-	dbUrl := "postgres://postgres:12345@localhost:5432/postgres"
 
-	dbPool, err := pgxpool.Connect(ctx, dbUrl)
+	dbPool, err := pgxpool.Connect(ctx, connString)
 	if err != nil {
 		return pg, err
 	}
@@ -109,22 +108,25 @@ func (pg PostgresDb) GetEvent(ctx context.Context, id int64) (types.Event, error
 	sb := sqlbuilder.PostgreSQL.NewSelectBuilder()
 	var e eventDb
 
-	sb.Select("id", "name", "startTime", "endTime", "description", "alertTime")
-	sb.From("events")
-	sb.Where(sb.Equal("id", id))
-
-	q, args := sb.Build()
-
-	err := pgxscan.Get(ctx, pg.pool, &e, q, args[0])
+	exists, err := pg.exists(ctx, id)
 	if err != nil {
 		return types.Event(e), err
 	}
 
-	if e.ID == 0 {
-		return types.Event(e), errors.New("event with specified id not found")
+	if exists == true {
+		sb.Select("id", "name", "startTime", "endTime", "description", "alertTime")
+		sb.From("events")
+		sb.Where(sb.Equal("id", id))
+
+		q, args := sb.Build()
+
+		err := pgxscan.Get(ctx, pg.pool, &e, q, args[0])
+		if err != nil {
+			return types.Event(e), err
+		}
 	}
 
-	return types.Event(e), nil
+	return types.Event(e), errors.New("event with specified id not found")
 }
 
 func (pg PostgresDb) AddEvent(ctx context.Context, e types.Event) error {
