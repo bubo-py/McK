@@ -43,40 +43,26 @@ func (bl BusinessLogic) GetEvents(ctx context.Context, f types.Filters) ([]types
 		if f.Day <= 0 || f.Day >= 32 {
 			return s, errors.New("invalid day value")
 		}
-
-		e, err := bl.db.GetEventsByDay(ctx, f.Day)
-		if err != nil {
-			return s, err
-		}
-
-		s = append(s, e...)
 	}
 
 	if f.Month != 0 {
 		if f.Month <= 0 || f.Month >= 13 {
 			return s, errors.New("invalid month value")
 		}
-
-		e, err := bl.db.GetEventsByMonth(ctx, f.Month)
-		if err != nil {
-			return s, err
-		}
-
-		s = append(s, e...)
 	}
 
 	if f.Year != 0 {
 		if f.Year <= 0 {
 			return s, errors.New("invalid year value")
 		}
-
-		e, err := bl.db.GetEventsByYear(ctx, f.Year)
-		if err != nil {
-			return s, err
-		}
-
-		s = append(s, e...)
 	}
+
+	e, err := bl.db.GetEventsFiltered(ctx, f)
+	if err != nil {
+		return s, err
+	}
+
+	s = append(s, e...)
 
 	return s, nil
 }

@@ -41,6 +41,12 @@ func TestPostgresDb_GetEvent(t *testing.T) {
 		t.Error(err)
 	}
 
+	f := types.Filters{
+		Day:   15,
+		Month: 5,
+		Year:  0,
+	}
+
 	event := types.Event{
 		ID:          100,
 		Name:        "Initial meeting",
@@ -83,10 +89,19 @@ func TestPostgresDb_GetEvent(t *testing.T) {
 	if err == nil {
 		t.Errorf("Error is nil, should have: %s", "event with specified id not found")
 	}
+
+	events, err := db.GetEventsFiltered(ctx, f)
+	if err != nil {
+		t.Error(err)
+	}
+
+	if len(events) > 2 {
+		t.Errorf("Events incorrectly fetched for given date, should have up to 2, got: %d", len(events))
+	}
 }
 
 func TestPostgresDb_DeleteEvent(t *testing.T) {
-	ti := time.Date(2010, 9, 16, 20, 30, 0, 0, time.Local)
+	ti := time.Date(2010, 5, 15, 20, 30, 0, 0, time.Local)
 	ti2 := time.Date(2022, 9, 16, 20, 30, 0, 0, time.Local)
 
 	ctx := context.Background()

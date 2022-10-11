@@ -12,7 +12,5 @@ type DatabaseRepository interface {
 	AddEvent(ctx context.Context, e types.Event) error
 	DeleteEvent(ctx context.Context, id int64) error
 	UpdateEvent(ctx context.Context, e types.Event, id int64) error
-	GetEventsByDay(ctx context.Context, day int) ([]types.Event, error)
-	GetEventsByMonth(ctx context.Context, month int) ([]types.Event, error)
-	GetEventsByYear(ctx context.Context, year int) ([]types.Event, error)
+	GetEventsFiltered(ctx context.Context, f types.Filters) ([]types.Event, error)
 }

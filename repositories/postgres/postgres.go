@@ -206,7 +206,7 @@ func (pg PostgresDb) UpdateEvent(ctx context.Context, e types.Event, id int64) e
 	return errors.New("event with specified id not found")
 }
 
-func (pg PostgresDb) GetEventsByDay(ctx context.Context, day int) ([]types.Event, error) {
+func (pg PostgresDb) GetEventsFiltered(ctx context.Context, f types.Filters) ([]types.Event, error) {
 	var filtered []types.Event
 	var events []*eventDb
 
@@ -214,55 +214,18 @@ func (pg PostgresDb) GetEventsByDay(ctx context.Context, day int) ([]types.Event
 
 	sb.Select("id", "name", "startTime", "endTime", "description", "alertTime")
 	sb.From("events")
-	sb.Where(sb.Equal("EXTRACT(day FROM startTime)", day))
 
-	q, args := sb.Build()
-
-	err := pgxscan.Select(ctx, pg.pool, &events, q, args...)
-	if err != nil {
-		return filtered, err
+	if f.Day != 0 {
+		sb.Where(sb.Equal("EXTRACT(day FROM startTime)", f.Day))
 	}
 
-	for _, event := range events {
-		filtered = append(filtered, types.Event(*event))
+	if f.Month != 0 {
+		sb.Where(sb.Equal("EXTRACT(month FROM startTime)", f.Month))
 	}
 
-	return filtered, nil
-}
-
-func (pg PostgresDb) GetEventsByMonth(ctx context.Context, month int) ([]types.Event, error) {
-	var filtered []types.Event
-	var events []*eventDb
-
-	sb := sqlbuilder.PostgreSQL.NewSelectBuilder()
-
-	sb.Select("id", "name", "startTime", "endTime", "description", "alertTime")
-	sb.From("events")
-	sb.Where(sb.Equal("EXTRACT(month FROM startTime)", month))
-
-	q, args := sb.Build()
-
-	err := pgxscan.Select(ctx, pg.pool, &events, q, args...)
-	if err != nil {
-		return filtered, err
+	if f.Year != 0 {
+		sb.Where(sb.Equal("EXTRACT(year FROM startTime)", f.Year))
 	}
-
-	for _, event := range events {
-		filtered = append(filtered, types.Event(*event))
-	}
-
-	return filtered, nil
-}
-
-func (pg PostgresDb) GetEventsByYear(ctx context.Context, year int) ([]types.Event, error) {
-	var filtered []types.Event
-	var events []*eventDb
-
-	sb := sqlbuilder.PostgreSQL.NewSelectBuilder()
-
-	sb.Select("id", "name", "startTime", "endTime", "description", "alertTime")
-	sb.From("events")
-	sb.Where(sb.Equal("EXTRACT(year FROM startTime)", year))
 
 	q, args := sb.Build()
 
