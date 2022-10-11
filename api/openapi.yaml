@@ -137,6 +137,76 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+  /users:
+    description: A path for user management
+    post:
+      summary: Add a new user
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+      responses:
+        201:
+          description: User created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        400:
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /users/{userId}:
+    put:
+      summary: Update an existing user
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/updateUser'
+      responses:
+        200:
+          description: User updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        404:
+          description: User with specified ID not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      summary: Delete an event by ID
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: integer
+      responses:
+        204:
+          description: User deleted
+        404:
+          description: User with specified ID not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+
 components:
   schemas:
     createEvent:
@@ -197,6 +267,48 @@ components:
           required:
             - id
         - $ref: '#/components/schemas/createEvent'
+
+    User:
+      allOf:
+        - type: object
+          properties:
+            id:
+              type: integer
+              example: 2
+          required:
+            - id
+        - $ref: '#/components/schemas/createUser'
+
+    createUser:
+      type: object
+      properties:
+        login:
+          type: string
+          example: test-user
+        password:
+          type: string
+          example: hello12345
+        timezone:
+          format: date-time
+          example: 2022-09-14T10:30:00.000+5:30
+      required:
+        - login
+        - password
+        - timezone
+
+    updateUser:
+      type: object
+      properties:
+        login:
+          type: string
+          example: test-user
+        password:
+          type: string
+          example: hello12345
+        timezone:
+          format: date-time
+          example: 2022-09-14T10:30:00.000+5:30
+
 
     Error:
       properties:
