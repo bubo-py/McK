@@ -95,12 +95,7 @@ func (bl BusinessLogic) DeleteEvent(ctx context.Context, id int64) error {
 }
 
 func (bl BusinessLogic) UpdateEvent(ctx context.Context, e types.Event, id int64) error {
-	err := validatePostRequest(e)
-	if err != nil {
-		return err
-	}
-
-	err = validateLength(e.Name)
+	err := validateLength(e.Name)
 	if err != nil {
 		return err
 	}

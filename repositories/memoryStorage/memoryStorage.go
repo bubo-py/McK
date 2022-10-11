@@ -63,35 +63,35 @@ func (db *Database) UpdateEvent(ctx context.Context, e types.Event, id int64) er
 	return errors.New("event with specified id not found")
 }
 
-func (db *Database) GetEventsByDay(ctx context.Context, day int) ([]types.Event, error) {
-	filtered := make([]types.Event, 0)
+func (db *Database) GetEventsFiltered(ctx context.Context, f types.Filters) ([]types.Event, error) {
+	var filtered []types.Event
+	isDay := true
+	isMonth := true
+	isYear := true
 
 	for _, event := range db.Storage {
-		if event.StartTime.Day() == day {
+		if f.Day != 0 {
+			if event.StartTime.Day() != f.Day {
+				isDay = false
+			}
+		}
+
+		if f.Month != 0 {
+			if event.StartTime.Day() != f.Month {
+				isMonth = false
+			}
+		}
+
+		if f.Year != 0 {
+			if event.StartTime.Day() != f.Year {
+				isYear = false
+			}
+		}
+
+		if isDay && isMonth && isYear {
 			filtered = append(filtered, event)
 		}
 	}
-	return filtered, nil
-}
 
-func (db *Database) GetEventsByMonth(ctx context.Context, month int) ([]types.Event, error) {
-	filtered := make([]types.Event, 0)
-
-	for _, event := range db.Storage {
-		if int(event.StartTime.Month()) == month {
-			filtered = append(filtered, event)
-		}
-	}
-	return filtered, nil
-}
-
-func (db *Database) GetEventsByYear(ctx context.Context, year int) ([]types.Event, error) {
-	filtered := make([]types.Event, 0)
-
-	for _, event := range db.Storage {
-		if event.StartTime.Year() == year {
-			filtered = append(filtered, event)
-		}
-	}
 	return filtered, nil
 }
