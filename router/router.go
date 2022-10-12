@@ -1,10 +1,11 @@
-package handlers
+package router
 
 import (
+	"github.com/bubo-py/McK/events/handlers"
 	"github.com/go-chi/chi"
 )
 
-func InitRouter(h Handler) *chi.Mux {
+func InitRouter(h handlers.Handler) *chi.Mux {
 	r := chi.NewRouter()
 
 	r.Get("/api/events", h.GetEventsHandler)

@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/bubo-py/McK/service"
+	"github.com/bubo-py/McK/events/service"
 	"github.com/bubo-py/McK/types"
 	"github.com/go-chi/chi"
 )

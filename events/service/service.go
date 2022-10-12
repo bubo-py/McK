@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/bubo-py/McK/repositories"
+	"github.com/bubo-py/McK/events/repositories"
 	"github.com/bubo-py/McK/types"
 )
 

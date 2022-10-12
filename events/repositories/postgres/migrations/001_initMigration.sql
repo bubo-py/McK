@@ -1,4 +1,4 @@
-create table events (
+CREATE TABLE events (
     id BIGSERIAL PRIMARY KEY NOT NULL,
     name VARCHAR(255) NOT NULL,
     startTime TIMESTAMP NOT NULL,
@@ -10,4 +10,3 @@ create table events (
 ---- create above / drop below ----
 
 drop table events;
-

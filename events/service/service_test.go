@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/bubo-py/McK/repositories/memoryStorage"
+	"github.com/bubo-py/McK/events/repositories/memoryStorage"
 	"github.com/bubo-py/McK/types"
 )
 
