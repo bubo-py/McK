@@ -172,7 +172,7 @@ func (h Handler) UpdateEventHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = json.NewEncoder(w).Encode("Event updated")
+	err = json.NewEncoder(w).Encode(e)
 	if err != nil {
 		log.Println(err)
 	}
