@@ -77,12 +77,12 @@ func (pg Db) migrate(ctx context.Context, mFS embed.FS, rootDir, table string) e
 }
 
 func RunMigration(ctx context.Context, db Db) error {
-	err := db.migrate(ctx, f, "migrations", "migration")
+	err := db.migrate(ctx, f, "migrations", "events_migration")
 	if err != nil {
 		return err
 	}
 
-	log.Println("Migrations run correctly")
+	log.Println("Migrations from events domain run correctly")
 	return nil
 }
 

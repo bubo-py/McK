@@ -7,6 +7,7 @@ import (
 	"log"
 
 	"github.com/bubo-py/McK/types"
+	"github.com/georgysavva/scany/pgxscan"
 	"github.com/huandu/go-sqlbuilder"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/jackc/tern/migrate"
@@ -66,61 +67,71 @@ func (pg Db) migrate(ctx context.Context, mFS embed.FS, rootDir, table string) e
 }
 
 func RunMigration(ctx context.Context, db Db) error {
-	err := db.migrate(ctx, f, "migrations", "migration")
+	err := db.migrate(ctx, f, "migrations", "users_migration")
 	if err != nil {
 		return err
 	}
 
-	log.Println("Migrations run correctly")
+	log.Println("Migrations from users domain run correctly")
 	return nil
 }
 
-func (pg Db) AddUser(ctx context.Context, u types.User) error {
+func (pg Db) AddUser(ctx context.Context, u types.User) (types.User, error) {
 	ib := sqlbuilder.PostgreSQL.NewInsertBuilder()
 
 	ib.InsertInto("users")
 	ib.Cols("login", "password", "timezone")
 	ib.Values(u.Login, u.Password, u.Timezone)
 
+	ib.SQL("RETURNING *")
+
 	q, args := ib.Build()
 
-	_, err := pg.pool.Exec(ctx, q, args...)
+	err := pgxscan.Get(ctx, pg.pool, &u, q, args...)
 	if err != nil {
-		return err
+		return u, err
 	}
 
-	return nil
+	return u, nil
 }
 
-func (pg Db) UpdateUser(ctx context.Context, u types.User, id int64) error {
+func (pg Db) UpdateUser(ctx context.Context, u types.User, id int64) (types.User, error) {
 	ub := sqlbuilder.PostgreSQL.NewUpdateBuilder()
 
 	exists, err := pg.exists(ctx, id)
 	if err != nil {
-		return err
+		return u, err
 	}
 
 	if exists == false {
-		return errors.New("user with specified id not found")
+		return u, errors.New("user with specified id not found")
 	}
 
-	ub.Update("events")
-	ub.Set(
-		ub.Assign("login", u.Login),
-		ub.Assign("password", u.Password),
-		ub.Assign("timezone", u.Timezone),
-	)
+	ub.Update("users")
+
+	if u.Login != "" {
+		ub.SetMore(ub.Assign("login", u.Login))
+	}
+
+	if u.Password != "" {
+		ub.SetMore(ub.Assign("password", u.Password))
+	}
+
+	if u.Timezone != "" {
+		ub.SetMore(ub.Assign("timezone", u.Timezone))
+	}
 
 	ub.Where(ub.Equal("id", id))
+	ub.SQL("RETURNING *")
 
 	q, args := ub.Build()
 
 	_, err = pg.pool.Exec(ctx, q, args...)
 	if err != nil {
-		return err
+		return u, err
 	}
 
-	return nil
+	return u, nil
 }
 
 func (pg Db) DeleteUser(ctx context.Context, id int64) error {
@@ -135,7 +146,7 @@ func (pg Db) DeleteUser(ctx context.Context, id int64) error {
 		return errors.New("user with specified id not found")
 	}
 
-	db.DeleteFrom("events")
+	db.DeleteFrom("users")
 	db.Where(db.Equal("id", id))
 
 	q, args := db.Build()
@@ -146,6 +157,24 @@ func (pg Db) DeleteUser(ctx context.Context, id int64) error {
 	}
 
 	return nil
+}
+
+func (pg Db) GetUserByLogin(ctx context.Context, login string) (types.User, error) {
+	sb := sqlbuilder.PostgreSQL.NewSelectBuilder()
+	var u types.User
+
+	sb.Select("id", "login", "password", "timezone")
+	sb.From("users")
+	sb.Where(sb.Equal("login", login))
+
+	q, args := sb.Build()
+
+	err := pgxscan.Get(ctx, pg.pool, &u, q, args...)
+	if err != nil {
+		return u, err
+	}
+
+	return u, nil
 }
 
 func (pg Db) exists(ctx context.Context, id int64) (bool, error) {

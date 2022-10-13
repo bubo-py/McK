@@ -30,7 +30,7 @@ func (h Handler) AddUserHandler(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 	}
 
-	err = h.bl.AddUser(r.Context(), u)
+	u, err = h.bl.AddUser(r.Context(), u)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		err = json.NewEncoder(w).Encode(err.Error())
@@ -40,7 +40,7 @@ func (h Handler) AddUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = json.NewEncoder(w).Encode(u)
+	err = json.NewEncoder(w).Encode(u.ID)
 	if err != nil {
 		log.Println(err)
 	}
@@ -77,7 +77,7 @@ func (h Handler) UpdateUserHandler(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 	}
 
-	err = h.bl.UpdateUser(r.Context(), u, id)
+	u, err = h.bl.UpdateUser(r.Context(), u, id)
 	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
 		err = json.NewEncoder(w).Encode(err.Error())
@@ -87,7 +87,7 @@ func (h Handler) UpdateUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = json.NewEncoder(w).Encode(u)
+	err = json.NewEncoder(w).Encode(u.ID)
 	if err != nil {
 		log.Println(err)
 	}
