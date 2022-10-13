@@ -1,6 +1,7 @@
-package repositories
+package memoryStorage
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"testing"
@@ -8,6 +9,8 @@ import (
 
 	"github.com/bubo-py/McK/types"
 )
+
+var ctx context.Context
 
 func TestAppendEvent(t *testing.T) {
 	db := InitDatabase()
@@ -30,10 +33,12 @@ func TestAppendEvent(t *testing.T) {
 		Description: "A Weekly meeting for frontend team",
 		AlertTime:   ti,
 	}
-	db.AddEvent(event)
-	db.AddEvent(event2)
+	_ = db.AddEvent(ctx, event)
+	_ = db.AddEvent(ctx, event2)
 
-	if len(db.GetEvents()) < 2 {
+	e, _ := db.GetEvents(ctx)
+
+	if len(e) < 2 {
 		t.Error("Failed to add an event")
 	}
 }
@@ -42,7 +47,7 @@ func TestDeleteEvent(t *testing.T) {
 	ti := time.Date(2022, 9, 16, 20, 30, 0, 0, time.Local)
 
 	testCases := []struct {
-		id        int
+		id        int64
 		expLength int
 		expError  error
 	}{
@@ -64,12 +69,14 @@ func TestDeleteEvent(t *testing.T) {
 				AlertTime:   ti,
 			}
 
-			db.AddEvent(event)
-			db.AddEvent(event)
+			_ = db.AddEvent(ctx, event)
+			_ = db.AddEvent(ctx, event)
 
-			err := db.DeleteEvent(tc.id)
-			if len(db.GetEvents()) != tc.expLength {
-				t.Errorf("Failed to delete an event: got length: %v, expected: %v", len(db.GetEvents()), tc.expLength)
+			err := db.DeleteEvent(ctx, tc.id)
+
+			e, _ := db.GetEvents(ctx)
+			if len(e) != tc.expLength {
+				t.Errorf("Failed to delete an event: got length: %v, expected: %v", len(e), tc.expLength)
 			}
 
 			if err != nil {
@@ -85,7 +92,7 @@ func TestUpdateEvent(t *testing.T) {
 	ti := time.Date(2022, 9, 16, 20, 30, 0, 0, time.Local)
 
 	testCases := []struct {
-		id       int
+		id       int64
 		expName  string
 		expError error
 	}{
@@ -115,17 +122,17 @@ func TestUpdateEvent(t *testing.T) {
 				AlertTime:   ti,
 			}
 
-			db.AddEvent(event)
-			db.AddEvent(event)
+			_ = db.AddEvent(ctx, event)
+			_ = db.AddEvent(ctx, event)
 
-			err := db.UpdateEvent(uEvent, tc.id)
+			err := db.UpdateEvent(ctx, uEvent, tc.id)
 			if err != nil {
 				if err.Error() != tc.expError.Error() {
 					t.Errorf("Should return different error: got: %v, expected: %v", err, tc.expError)
 				}
 			}
 
-			e, _ := db.GetEvent(tc.id)
+			e, _ := db.GetEvent(ctx, tc.id)
 			if e.Name != tc.expName {
 				t.Errorf("Failed to update an event: got name: %v, expected: %v", e.Name, tc.expName)
 			}
