@@ -152,7 +152,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/User'
+                $ref: '#/components/schemas/returnUser'
         400:
           description: Bad request
           content:
@@ -180,7 +180,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/User'
+                $ref: '#/components/schemas/returnUser'
         404:
           description: User with specified ID not found
           content:
@@ -268,16 +268,12 @@ components:
             - id
         - $ref: '#/components/schemas/createEvent'
 
-    User:
-      allOf:
-        - type: object
-          properties:
-            id:
-              type: integer
-              example: 2
-          required:
-            - id
-        - $ref: '#/components/schemas/createUser'
+    returnUser:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 2
 
     createUser:
       type: object

@@ -1,7 +1,7 @@
 CREATE TABLE users (
     id BIGSERIAL PRIMARY KEY NOT NULL,
     login VARCHAR(30),
-    password VARCHAR(255),
+    password VARCHAR(60),
     timezone TEXT
 );
 
