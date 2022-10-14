@@ -92,3 +92,24 @@ func (h Handler) UpdateUserHandler(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 	}
 }
+
+func (h Handler) LoginHandler(w http.ResponseWriter, r *http.Request) {
+
+	var u types.User
+	err := json.NewDecoder(r.Body).Decode(&u)
+	if err != nil {
+		log.Println(err)
+	}
+
+	err = h.bl.LoginUser(r.Context(), u.Login, u.Password)
+	if err != nil {
+		w.WriteHeader(http.StatusNotFound)
+		err = json.NewEncoder(w).Encode(err.Error())
+		if err != nil {
+			log.Println(err)
+		}
+		return
+	}
+
+	err = json.NewEncoder(w).Encode("logged in")
+}

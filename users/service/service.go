@@ -13,6 +13,7 @@ type BusinessLogicInterface interface {
 	AddUser(ctx context.Context, u types.User) (types.User, error)
 	UpdateUser(ctx context.Context, u types.User, id int64) (types.User, error)
 	DeleteUser(ctx context.Context, id int64) error
+	LoginUser(ctx context.Context, login, password string) error
 }
 
 type BusinessLogic struct {
@@ -26,7 +27,7 @@ func InitBusinessLogic(db repositories.UserRepository) BusinessLogic {
 }
 
 func (bl BusinessLogic) AddUser(ctx context.Context, u types.User) (types.User, error) {
-	err := validateName(u.Login)
+	err := validateLogin(u.Login)
 	if err != nil {
 		return u, err
 	}
@@ -40,16 +41,14 @@ func (bl BusinessLogic) AddUser(ctx context.Context, u types.User) (types.User, 
 }
 
 func (bl BusinessLogic) UpdateUser(ctx context.Context, u types.User, id int64) (types.User, error) {
-	err := validateName(u.Login)
+	err := validateLogin(u.Login)
 	if err != nil {
 		return u, err
 	}
 
-	if u.Password != "" {
-		u.Password, err = hashPassword(u.Password)
-		if err != nil {
-			return u, err
-		}
+	u.Password, err = hashPassword(u.Password)
+	if err != nil {
+		return u, err
 	}
 
 	return bl.db.UpdateUser(ctx, u, id)
@@ -59,14 +58,15 @@ func (bl BusinessLogic) DeleteUser(ctx context.Context, id int64) error {
 	return bl.db.DeleteUser(ctx, id)
 }
 
-func validateName(s string) error {
-	if len(s) > 30 {
-		return errors.New("login should contain up to 30 characters")
-	}
-	return nil
+func (bl BusinessLogic) LoginUser(ctx context.Context, login, password string) error {
+	return bl.checkPassword(ctx, login, password)
 }
 
 func hashPassword(s string) (string, error) {
+	if len(s) < 5 {
+		return s, errors.New("password should be at least 5 characters")
+	}
+
 	bytes, err := bcrypt.GenerateFromPassword([]byte(s), bcrypt.DefaultCost)
 	if err != nil {
 		return s, err
@@ -80,7 +80,24 @@ func hashPassword(s string) (string, error) {
 	return s, nil
 }
 
-func checkPassword(login, password string) error {
+func (bl BusinessLogic) checkPassword(ctx context.Context, login, password string) error {
+	u, err := bl.db.GetUserByLogin(ctx, login)
+	if err != nil {
+		return err
+	}
+
+	err = bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(password))
+	if err != nil {
+		return errors.New("incorrect password")
+	}
+
+	return nil
+}
+
+func validateLogin(s string) error {
+	if len([]rune(s)) > 30 || len([]rune(s)) < 3 {
+		return errors.New("login should be at least 3 and contain up to 30 characters")
+	}
 
 	return nil
 }
