@@ -21,7 +21,7 @@ func TestMain(m *testing.M) {
 	}
 
 	_, _ = db.pool.Exec(ctx, "DROP TABLE events")
-	_, _ = db.pool.Exec(ctx, "DROP TABLE migration")
+	_, _ = db.pool.Exec(ctx, "DROP TABLE events_migration")
 	_ = RunMigration(ctx, db)
 
 	code := m.Run()

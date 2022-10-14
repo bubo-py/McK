@@ -66,7 +66,7 @@ func TestGetEvents(t *testing.T) {
 		},
 	}
 	for i, tc := range testCases {
-		testName := fmt.Sprintf("Test %d", i)
+		testName := fmt.Sprintf("Test %d", i+1)
 		t.Run(testName, func(t *testing.T) {
 			db := memoryStorage.InitDatabase()
 			bl := InitBusinessLogic(db)
