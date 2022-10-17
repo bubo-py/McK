@@ -13,7 +13,6 @@ func UserRoutes(h handlers.Handler) http.Handler {
 	r.Post("/", h.AddUserHandler)
 	r.Put("/{id}", h.UpdateUserHandler)
 	r.Delete("/{id}", h.DeleteUserHandler)
-	r.Post("/login", h.LoginHandler)
 
 	return r
 }

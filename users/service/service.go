@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"log"
 
 	"github.com/bubo-py/McK/types"
 	"github.com/bubo-py/McK/users/repositories"
@@ -88,7 +89,8 @@ func (bl BusinessLogic) checkPassword(ctx context.Context, login, password strin
 
 	err = bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(password))
 	if err != nil {
-		return errors.New("incorrect password")
+		log.Println("incorrect password")
+		return errors.New("incorrect credentials")
 	}
 
 	return nil

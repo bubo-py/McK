@@ -171,7 +171,8 @@ func (pg Db) GetUserByLogin(ctx context.Context, login string) (types.User, erro
 
 	err := pgxscan.Get(ctx, pg.pool, &u, q, args...)
 	if err != nil {
-		return u, err
+		log.Println("user with provided login not found")
+		return u, errors.New("incorrect credentials")
 	}
 
 	return u, nil

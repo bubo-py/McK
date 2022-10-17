@@ -53,8 +53,10 @@ func Serve(ctx context.Context) {
 	usersHandler := usersHandlers.InitHandler(usersBl)
 	r.Mount("/api/users", userRouters.UserRoutes(usersHandler))
 
+	wrappedRouter := usersHandlers.InitAuthenticator(r, usersBl)
+
 	port := os.Getenv("LISTEN_AND_SERVE_PORT")
 	log.Printf("Starting an HTTP server on port %v", port)
-	log.Fatal(http.ListenAndServe(port, r))
+	log.Fatal(http.ListenAndServe(port, wrappedRouter))
 
 }
