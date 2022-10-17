@@ -17,7 +17,6 @@ func TestMain(m *testing.M) {
 	db, err := Init(ctx, os.Getenv("PGURL"))
 	if err != nil {
 		log.Fatalf("Could not initialize database: %v", err)
-		os.Exit(1)
 	}
 
 	_, _ = db.pool.Exec(ctx, "DROP TABLE events")
