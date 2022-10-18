@@ -42,20 +42,41 @@ func (bl BusinessLogic) AddUser(ctx context.Context, u types.User) (types.User, 
 }
 
 func (bl BusinessLogic) UpdateUser(ctx context.Context, u types.User, id int64) (types.User, error) {
-	err := validateLogin(u.Login)
-	if err != nil {
-		return u, err
+	if u.Login != "" {
+		err := validateLogin(u.Login)
+		if err != nil {
+			return u, err
+		}
 	}
 
-	u.Password, err = hashPassword(u.Password)
-	if err != nil {
-		return u, err
+	if u.Password != "" {
+		hashedPwd, err := hashPassword(u.Password)
+		if err != nil {
+			return u, err
+		}
+		u.Password = hashedPwd
+	}
+
+	var currentUserLogin string
+	currentUserLogin = ctx.Value("userLogin").(string)
+
+	currentUser, _ := bl.db.GetUserByLogin(ctx, currentUserLogin)
+	if currentUser.ID != id {
+		return u, errors.New("cannot modify another user's account")
 	}
 
 	return bl.db.UpdateUser(ctx, u, id)
 }
 
 func (bl BusinessLogic) DeleteUser(ctx context.Context, id int64) error {
+	var currentUserLogin string
+	currentUserLogin = ctx.Value("userLogin").(string)
+
+	currentUser, _ := bl.db.GetUserByLogin(ctx, currentUserLogin)
+	if currentUser.ID != id {
+		return errors.New("cannot delete another user's account")
+	}
+
 	return bl.db.DeleteUser(ctx, id)
 }
 

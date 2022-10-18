@@ -15,19 +15,10 @@ type Handler struct {
 	bl service.BusinessLogicInterface
 }
 
-type Authenticator struct {
-	handler http.Handler
-	bl      service.BusinessLogicInterface
-}
-
 func InitHandler(bl service.BusinessLogicInterface) Handler {
 	var h Handler
 	h.bl = bl
 	return h
-}
-
-func InitAuthenticator(handlerToWrap http.Handler, bl service.BusinessLogicInterface) *Authenticator {
-	return &Authenticator{handlerToWrap, bl}
 }
 
 func (h Handler) AddUserHandler(w http.ResponseWriter, r *http.Request) {
@@ -85,6 +76,7 @@ func (h Handler) UpdateUserHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Println(err)
 	}
+	u.ID = id
 
 	u, err = h.bl.UpdateUser(r.Context(), u, id)
 	if err != nil {
@@ -100,27 +92,4 @@ func (h Handler) UpdateUserHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Println(err)
 	}
-}
-
-func (a Authenticator) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	user, pwd, ok := r.BasicAuth()
-	if !ok {
-		err := json.NewEncoder(w).Encode("failed to get credentials")
-		if err != nil {
-			log.Println(err)
-		}
-		return
-	}
-
-	err := a.bl.LoginUser(r.Context(), user, pwd)
-	if err != nil {
-		w.WriteHeader(http.StatusUnauthorized)
-		err = json.NewEncoder(w).Encode(err.Error())
-		if err != nil {
-			log.Println(err)
-		}
-		return
-	}
-
-	a.handler.ServeHTTP(w, r)
 }

@@ -10,6 +10,7 @@ import (
 	eventsPostgres "github.com/bubo-py/McK/events/repositories/postgres"
 	eventsRouters "github.com/bubo-py/McK/events/routers"
 	eventsService "github.com/bubo-py/McK/events/service"
+	"github.com/bubo-py/McK/middlewares"
 	usersHandlers "github.com/bubo-py/McK/users/handlers"
 	usersPostgres "github.com/bubo-py/McK/users/repositories/postgres"
 	userRouters "github.com/bubo-py/McK/users/routers"
@@ -47,16 +48,15 @@ func Serve(ctx context.Context) {
 
 	// Router setup
 	r := chi.NewRouter()
+	r.Use(middlewares.Authenticate(usersBl))
 	eventsHandler := eventsHandlers.InitHandler(eventsBl)
 	r.Mount("/api/events", eventsRouters.EventsRoutes(eventsHandler))
 
 	usersHandler := usersHandlers.InitHandler(usersBl)
 	r.Mount("/api/users", userRouters.UserRoutes(usersHandler))
 
-	wrappedRouter := usersHandlers.InitAuthenticator(r, usersBl)
-
 	port := os.Getenv("LISTEN_AND_SERVE_PORT")
 	log.Printf("Starting an HTTP server on port %v", port)
-	log.Fatal(http.ListenAndServe(port, wrappedRouter))
+	log.Fatal(http.ListenAndServe(port, r))
 
 }
