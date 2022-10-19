@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/bubo-py/McK/events/repositories"
 	"github.com/bubo-py/McK/types"
@@ -36,6 +37,16 @@ func (bl BusinessLogic) GetEvents(ctx context.Context, f types.Filters) ([]types
 		}
 
 		s = append(s, e...)
+
+		for i := range s {
+			if s[i].AlertTime.IsZero() == false {
+				s[i].AlertTime = bl.eventToUserTime(ctx, s[i].AlertTime)
+			}
+
+			s[i].StartTime = bl.eventToUserTime(ctx, s[i].StartTime)
+			s[i].EndTime = bl.eventToUserTime(ctx, s[i].EndTime)
+		}
+
 		return s, nil
 	}
 
@@ -64,6 +75,15 @@ func (bl BusinessLogic) GetEvents(ctx context.Context, f types.Filters) ([]types
 
 	s = append(s, e...)
 
+	for i := range s {
+		if s[i].AlertTime.IsZero() == false {
+			s[i].AlertTime = bl.eventToUserTime(ctx, s[i].AlertTime)
+		}
+
+		s[i].StartTime = bl.eventToUserTime(ctx, s[i].StartTime)
+		s[i].EndTime = bl.eventToUserTime(ctx, s[i].EndTime)
+	}
+
 	return s, nil
 }
 
@@ -81,6 +101,8 @@ func (bl BusinessLogic) AddEvent(ctx context.Context, e types.Event) error {
 	if err != nil {
 		return err
 	}
+
+	e = bl.eventToUTC(ctx, e)
 
 	err = bl.db.AddEvent(ctx, e)
 	if err != nil {
@@ -101,6 +123,57 @@ func (bl BusinessLogic) UpdateEvent(ctx context.Context, e types.Event, id int64
 	}
 
 	return bl.db.UpdateEvent(ctx, e, id)
+}
+
+func (bl BusinessLogic) eventToUserTime(ctx context.Context, t time.Time) time.Time {
+	location, err := time.LoadLocation(ctx.Value("timezone").(string))
+	if err != nil {
+		return t
+	}
+
+	t = t.In(location)
+	return t
+}
+
+func (bl BusinessLogic) eventToUTC(ctx context.Context, e types.Event) types.Event {
+	userLocation, _ := time.LoadLocation(ctx.Value("timezone").(string))
+
+	startTimeWithLocation := time.Date(
+		e.StartTime.Year(),
+		e.StartTime.Month(),
+		e.StartTime.Day(),
+		e.StartTime.Hour(),
+		e.StartTime.Minute(),
+		e.StartTime.Second(),
+		e.StartTime.Nanosecond(),
+		userLocation)
+	e.StartTime = startTimeWithLocation.In(time.UTC)
+
+	endTimeWithLocation := time.Date(
+		e.EndTime.Year(),
+		e.EndTime.Month(),
+		e.EndTime.Day(),
+		e.EndTime.Hour(),
+		e.EndTime.Minute(),
+		e.EndTime.Second(),
+		e.EndTime.Nanosecond(),
+		userLocation)
+	e.EndTime = endTimeWithLocation.In(time.UTC)
+
+	if e.AlertTime.IsZero() == false {
+		alertTimeWithLocation := time.Date(
+			e.EndTime.Year(),
+			e.EndTime.Month(),
+			e.EndTime.Day(),
+			e.EndTime.Hour(),
+			e.EndTime.Minute(),
+			e.EndTime.Second(),
+			e.EndTime.Nanosecond(),
+			userLocation)
+		e.AlertTime = alertTimeWithLocation.In(time.UTC)
+	}
+
+	return e
 }
 
 func validatePostRequest(e types.Event) error {

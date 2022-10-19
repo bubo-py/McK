@@ -9,7 +9,7 @@ import (
 	"github.com/bubo-py/McK/users/service"
 )
 
-func Authenticate(bl service.BusinessLogicInterface) func(next http.Handler) http.Handler {
+func Authenticate(bl service.BusinessLogic) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			login, pwd, ok := r.BasicAuth()
@@ -33,7 +33,11 @@ func Authenticate(bl service.BusinessLogicInterface) func(next http.Handler) htt
 				}
 			}
 
-			ctxWithUser := context.WithValue(r.Context(), "userLogin", login)
+			user, _ := bl.Db.GetUserByLogin(r.Context(), login)
+
+			ctxWithUser := context.WithValue(r.Context(), "login", user.Login)
+			ctxWithUser = context.WithValue(r.Context(), "timezone", user.Timezone)
+
 			rWithUser := r.WithContext(ctxWithUser)
 			next.ServeHTTP(w, rWithUser)
 		})

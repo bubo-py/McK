@@ -18,12 +18,12 @@ type BusinessLogicInterface interface {
 }
 
 type BusinessLogic struct {
-	db repositories.UserRepository
+	Db repositories.UserRepository
 }
 
 func InitBusinessLogic(db repositories.UserRepository) BusinessLogic {
 	var bl BusinessLogic
-	bl.db = db
+	bl.Db = db
 	return bl
 }
 
@@ -38,7 +38,7 @@ func (bl BusinessLogic) AddUser(ctx context.Context, u types.User) (types.User, 
 		return u, err
 	}
 
-	return bl.db.AddUser(ctx, u)
+	return bl.Db.AddUser(ctx, u)
 }
 
 func (bl BusinessLogic) UpdateUser(ctx context.Context, u types.User, id int64) (types.User, error) {
@@ -57,27 +57,25 @@ func (bl BusinessLogic) UpdateUser(ctx context.Context, u types.User, id int64) 
 		u.Password = hashedPwd
 	}
 
-	var currentUserLogin string
-	currentUserLogin = ctx.Value("userLogin").(string)
+	currentUserLogin := ctx.Value("userLogin").(string)
 
-	currentUser, _ := bl.db.GetUserByLogin(ctx, currentUserLogin)
+	currentUser, _ := bl.Db.GetUserByLogin(ctx, currentUserLogin)
 	if currentUser.ID != id {
 		return u, errors.New("cannot modify another user's account")
 	}
 
-	return bl.db.UpdateUser(ctx, u, id)
+	return bl.Db.UpdateUser(ctx, u, id)
 }
 
 func (bl BusinessLogic) DeleteUser(ctx context.Context, id int64) error {
-	var currentUserLogin string
-	currentUserLogin = ctx.Value("userLogin").(string)
+	currentUserLogin := ctx.Value("userLogin").(string)
 
-	currentUser, _ := bl.db.GetUserByLogin(ctx, currentUserLogin)
+	currentUser, _ := bl.Db.GetUserByLogin(ctx, currentUserLogin)
 	if currentUser.ID != id {
 		return errors.New("cannot delete another user's account")
 	}
 
-	return bl.db.DeleteUser(ctx, id)
+	return bl.Db.DeleteUser(ctx, id)
 }
 
 func (bl BusinessLogic) LoginUser(ctx context.Context, login, password string) error {
@@ -103,7 +101,7 @@ func hashPassword(s string) (string, error) {
 }
 
 func (bl BusinessLogic) checkPassword(ctx context.Context, login, password string) error {
-	u, err := bl.db.GetUserByLogin(ctx, login)
+	u, err := bl.Db.GetUserByLogin(ctx, login)
 	if err != nil {
 		return err
 	}
