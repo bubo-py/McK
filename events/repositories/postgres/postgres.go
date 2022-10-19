@@ -181,29 +181,43 @@ func (pg Db) UpdateEvent(ctx context.Context, e types.Event, id int64) error {
 		return err
 	}
 
-	if exists == true {
-		ub.Update("events")
-		ub.Set(
-			ub.Assign("name", e.Name),
-			ub.Assign("startTime", e.StartTime),
-			ub.Assign("endTime", e.EndTime),
-			ub.Assign("description", e.Description),
-			ub.Assign("alertTime", e.AlertTime),
-		)
-
-		ub.Where(ub.Equal("id", id))
-
-		q, args := ub.Build()
-
-		_, err := pg.pool.Exec(ctx, q, args...)
-		if err != nil {
-			return err
-		}
-
-		return nil
+	if exists == false {
+		return errors.New("event with specified id not found")
 	}
 
-	return errors.New("event with specified id not found")
+	ub.Update("events")
+
+	if e.Name != "" {
+		ub.SetMore(ub.Assign("name", e.Name))
+	}
+
+	if e.StartTime.IsZero() == false {
+		ub.SetMore(ub.Assign("startTime", e.StartTime))
+	}
+
+	if e.EndTime.IsZero() == false {
+		ub.SetMore(ub.Assign("endTime", e.EndTime))
+	}
+
+	if e.Description == "" {
+		ub.SetMore(ub.Assign("description", e.Description))
+	}
+
+	if e.AlertTime.IsZero() == false {
+		ub.SetMore(ub.Assign("alertTime", e.AlertTime))
+	}
+
+	ub.Where(ub.Equal("id", id))
+
+	q, args := ub.Build()
+
+	_, err = pg.pool.Exec(ctx, q, args...)
+	if err != nil {
+		return err
+	}
+
+	return nil
+
 }
 
 func (pg Db) GetEventsFiltered(ctx context.Context, f types.Filters) ([]types.Event, error) {
