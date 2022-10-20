@@ -59,9 +59,16 @@ func (bl BusinessLogic) UpdateUser(ctx context.Context, u types.User, id int64) 
 		u.Password = hashedPwd
 	}
 
-	currentUserLogin := contextHelpers.RetrieveLoginFromContext(ctx)
+	currentUserLogin, ok := contextHelpers.RetrieveLoginFromContext(ctx)
+	if !ok {
+		return u, errors.New("failed to fetch login from context")
+	}
 
-	currentUser, _ := bl.db.GetUserByLogin(ctx, currentUserLogin)
+	currentUser, err := bl.db.GetUserByLogin(ctx, currentUserLogin)
+	if err != nil {
+		return u, err
+	}
+
 	if currentUser.ID != id {
 		return u, errors.New("cannot modify another user's account")
 	}
@@ -70,7 +77,10 @@ func (bl BusinessLogic) UpdateUser(ctx context.Context, u types.User, id int64) 
 }
 
 func (bl BusinessLogic) DeleteUser(ctx context.Context, id int64) error {
-	currentUserLogin := contextHelpers.RetrieveLoginFromContext(ctx)
+	currentUserLogin, ok := contextHelpers.RetrieveLoginFromContext(ctx)
+	if !ok {
+		return errors.New("failed to fetch login from context")
+	}
 
 	currentUser, _ := bl.db.GetUserByLogin(ctx, currentUserLogin)
 	if currentUser.ID != id {

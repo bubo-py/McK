@@ -41,11 +41,10 @@ func Authenticate(bl service.BusinessLogicInterface) func(next http.Handler) htt
 				return
 			}
 
-			ctxWithUser := contextHelpers.WriteLoginToContext(r.Context(), user.Login)
-			ctxWithUser = contextHelpers.WriteTimezoneToContext(r.Context(), user.Timezone)
+			r = r.WithContext(contextHelpers.WriteLoginToContext(r.Context(), user.Login))
+			r = r.WithContext(contextHelpers.WriteTimezoneToContext(r.Context(), user.Timezone))
 
-			rWithUser := r.WithContext(ctxWithUser)
-			next.ServeHTTP(w, rWithUser)
+			next.ServeHTTP(w, r)
 		})
 	}
 }

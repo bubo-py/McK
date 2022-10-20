@@ -41,11 +41,21 @@ func (bl BusinessLogic) GetEvents(ctx context.Context, f types.Filters) ([]types
 
 		for i := range s {
 			if s[i].AlertTime.IsZero() == false {
-				s[i].AlertTime = bl.eventToUserTime(ctx, s[i].AlertTime)
+				s[i].AlertTime, err = bl.eventToUserTime(ctx, s[i].AlertTime)
+				if err != nil {
+					return e, nil
+				}
 			}
 
-			s[i].StartTime = bl.eventToUserTime(ctx, s[i].StartTime)
-			s[i].EndTime = bl.eventToUserTime(ctx, s[i].EndTime)
+			s[i].StartTime, err = bl.eventToUserTime(ctx, s[i].StartTime)
+			if err != nil {
+				return e, nil
+			}
+
+			s[i].EndTime, err = bl.eventToUserTime(ctx, s[i].EndTime)
+			if err != nil {
+				return e, nil
+			}
 		}
 
 		return s, nil
@@ -78,11 +88,21 @@ func (bl BusinessLogic) GetEvents(ctx context.Context, f types.Filters) ([]types
 
 	for i := range s {
 		if s[i].AlertTime.IsZero() == false {
-			s[i].AlertTime = bl.eventToUserTime(ctx, s[i].AlertTime)
+			s[i].AlertTime, err = bl.eventToUserTime(ctx, s[i].AlertTime)
+			if err != nil {
+				return e, nil
+			}
 		}
 
-		s[i].StartTime = bl.eventToUserTime(ctx, s[i].StartTime)
-		s[i].EndTime = bl.eventToUserTime(ctx, s[i].EndTime)
+		s[i].StartTime, err = bl.eventToUserTime(ctx, s[i].StartTime)
+		if err != nil {
+			return e, nil
+		}
+
+		s[i].EndTime, err = bl.eventToUserTime(ctx, s[i].EndTime)
+		if err != nil {
+			return e, nil
+		}
 	}
 
 	return s, nil
@@ -94,9 +114,20 @@ func (bl BusinessLogic) GetEvent(ctx context.Context, id int64) (types.Event, er
 		return e, nil
 	}
 
-	e.StartTime = bl.eventToUserTime(ctx, e.StartTime)
-	e.EndTime = bl.eventToUserTime(ctx, e.EndTime)
-	e.AlertTime = bl.eventToUserTime(ctx, e.AlertTime)
+	e.StartTime, err = bl.eventToUserTime(ctx, e.StartTime)
+	if err != nil {
+		return e, nil
+	}
+
+	e.EndTime, err = bl.eventToUserTime(ctx, e.EndTime)
+	if err != nil {
+		return e, nil
+	}
+
+	e.AlertTime, err = bl.eventToUserTime(ctx, e.AlertTime)
+	if err != nil {
+		return e, nil
+	}
 
 	return e, nil
 }
@@ -112,7 +143,10 @@ func (bl BusinessLogic) AddEvent(ctx context.Context, e types.Event) error {
 		return err
 	}
 
-	e = bl.eventToUTC(ctx, e)
+	e, err = bl.eventToUTC(ctx, e)
+	if err != nil {
+		return err
+	}
 
 	err = bl.db.AddEvent(ctx, e)
 	if err != nil {
@@ -134,25 +168,34 @@ func (bl BusinessLogic) UpdateEvent(ctx context.Context, e types.Event, id int64
 		}
 	}
 
-	e = bl.eventToUTC(ctx, e)
+	e, err := bl.eventToUTC(ctx, e)
+	if err != nil {
+		return err
+	}
 
 	return bl.db.UpdateEvent(ctx, e, id)
 }
 
-func (bl BusinessLogic) eventToUserTime(ctx context.Context, t time.Time) time.Time {
-	userLocation := contextHelpers.RetrieveTimezoneFromContext(ctx)
+func (bl BusinessLogic) eventToUserTime(ctx context.Context, t time.Time) (time.Time, error) {
+	userLocation, ok := contextHelpers.RetrieveTimezoneFromContext(ctx)
+	if !ok {
+		return t, errors.New("failed to fetch timezone from context")
+	}
 
 	location, err := time.LoadLocation(userLocation)
 	if err != nil {
-		return t
+		return t, err
 	}
 
 	t = t.In(location)
-	return t
+	return t, nil
 }
 
-func (bl BusinessLogic) eventToUTC(ctx context.Context, e types.Event) types.Event {
-	userLocation := contextHelpers.RetrieveTimezoneFromContext(ctx)
+func (bl BusinessLogic) eventToUTC(ctx context.Context, e types.Event) (types.Event, error) {
+	userLocation, ok := contextHelpers.RetrieveTimezoneFromContext(ctx)
+	if !ok {
+		return e, errors.New("failed to fetch timezone from context")
+	}
 
 	startTimeWithLocation := bl.newDateWithLocation(e.StartTime, userLocation)
 	e.StartTime = startTimeWithLocation.In(time.UTC)
@@ -165,7 +208,7 @@ func (bl BusinessLogic) eventToUTC(ctx context.Context, e types.Event) types.Eve
 		e.AlertTime = alertTimeWithLocation.In(time.UTC)
 	}
 
-	return e
+	return e, nil
 }
 
 func (bl BusinessLogic) newDateWithLocation(t time.Time, locStr string) time.Time {

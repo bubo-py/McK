@@ -19,12 +19,12 @@ func WriteTimezoneToContext(ctx context.Context, value string) context.Context {
 	return ctxWithData
 }
 
-func RetrieveLoginFromContext(ctx context.Context) string {
-	login := ctx.Value(loginKey).(string)
-	return login
+func RetrieveLoginFromContext(ctx context.Context) (string, bool) {
+	login, ok := ctx.Value(loginKey).(string)
+	return login, ok
 }
 
-func RetrieveTimezoneFromContext(ctx context.Context) string {
-	timezone := ctx.Value(timezoneKey).(string)
-	return timezone
+func RetrieveTimezoneFromContext(ctx context.Context) (string, bool) {
+	timezone, ok := ctx.Value(timezoneKey).(string)
+	return timezone, ok
 }
