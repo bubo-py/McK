@@ -138,44 +138,36 @@ func (bl BusinessLogic) eventToUserTime(ctx context.Context, t time.Time) time.T
 }
 
 func (bl BusinessLogic) eventToUTC(ctx context.Context, e types.Event) types.Event {
-	userLocation, _ := time.LoadLocation(ctx.Value("timezone").(string))
+	userLocation, _ := ctx.Value("timezone").(string)
 
-	startTimeWithLocation := time.Date(
-		e.StartTime.Year(),
-		e.StartTime.Month(),
-		e.StartTime.Day(),
-		e.StartTime.Hour(),
-		e.StartTime.Minute(),
-		e.StartTime.Second(),
-		e.StartTime.Nanosecond(),
-		userLocation)
+	startTimeWithLocation := bl.newDateWithLocation(e.StartTime, userLocation)
 	e.StartTime = startTimeWithLocation.In(time.UTC)
 
-	endTimeWithLocation := time.Date(
-		e.EndTime.Year(),
-		e.EndTime.Month(),
-		e.EndTime.Day(),
-		e.EndTime.Hour(),
-		e.EndTime.Minute(),
-		e.EndTime.Second(),
-		e.EndTime.Nanosecond(),
-		userLocation)
+	endTimeWithLocation := bl.newDateWithLocation(e.EndTime, userLocation)
 	e.EndTime = endTimeWithLocation.In(time.UTC)
 
 	if e.AlertTime.IsZero() == false {
-		alertTimeWithLocation := time.Date(
-			e.EndTime.Year(),
-			e.EndTime.Month(),
-			e.EndTime.Day(),
-			e.EndTime.Hour(),
-			e.EndTime.Minute(),
-			e.EndTime.Second(),
-			e.EndTime.Nanosecond(),
-			userLocation)
+		alertTimeWithLocation := bl.newDateWithLocation(e.AlertTime, userLocation)
 		e.AlertTime = alertTimeWithLocation.In(time.UTC)
 	}
 
 	return e
+}
+
+func (bl BusinessLogic) newDateWithLocation(t time.Time, locStr string) time.Time {
+	loc, _ := time.LoadLocation(locStr)
+
+	newDate := time.Date(
+		t.Year(),
+		t.Month(),
+		t.Day(),
+		t.Hour(),
+		t.Minute(),
+		t.Second(),
+		t.Nanosecond(),
+		loc)
+
+	return newDate
 }
 
 func validatePostRequest(e types.Event) error {

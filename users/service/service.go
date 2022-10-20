@@ -15,15 +15,16 @@ type BusinessLogicInterface interface {
 	UpdateUser(ctx context.Context, u types.User, id int64) (types.User, error)
 	DeleteUser(ctx context.Context, id int64) error
 	LoginUser(ctx context.Context, login, password string) error
+	GetUserByLogin(ctx context.Context, login string) (types.User, error)
 }
 
 type BusinessLogic struct {
-	Db repositories.UserRepository
+	db repositories.UserRepository
 }
 
 func InitBusinessLogic(db repositories.UserRepository) BusinessLogic {
 	var bl BusinessLogic
-	bl.Db = db
+	bl.db = db
 	return bl
 }
 
@@ -38,7 +39,7 @@ func (bl BusinessLogic) AddUser(ctx context.Context, u types.User) (types.User, 
 		return u, err
 	}
 
-	return bl.Db.AddUser(ctx, u)
+	return bl.db.AddUser(ctx, u)
 }
 
 func (bl BusinessLogic) UpdateUser(ctx context.Context, u types.User, id int64) (types.User, error) {
@@ -59,23 +60,27 @@ func (bl BusinessLogic) UpdateUser(ctx context.Context, u types.User, id int64) 
 
 	currentUserLogin := ctx.Value("userLogin").(string)
 
-	currentUser, _ := bl.Db.GetUserByLogin(ctx, currentUserLogin)
+	currentUser, _ := bl.db.GetUserByLogin(ctx, currentUserLogin)
 	if currentUser.ID != id {
 		return u, errors.New("cannot modify another user's account")
 	}
 
-	return bl.Db.UpdateUser(ctx, u, id)
+	return bl.db.UpdateUser(ctx, u, id)
 }
 
 func (bl BusinessLogic) DeleteUser(ctx context.Context, id int64) error {
 	currentUserLogin := ctx.Value("userLogin").(string)
 
-	currentUser, _ := bl.Db.GetUserByLogin(ctx, currentUserLogin)
+	currentUser, _ := bl.db.GetUserByLogin(ctx, currentUserLogin)
 	if currentUser.ID != id {
 		return errors.New("cannot delete another user's account")
 	}
 
-	return bl.Db.DeleteUser(ctx, id)
+	return bl.db.DeleteUser(ctx, id)
+}
+
+func (bl BusinessLogic) GetUserByLogin(ctx context.Context, login string) (types.User, error) {
+	return bl.db.GetUserByLogin(ctx, login)
 }
 
 func (bl BusinessLogic) LoginUser(ctx context.Context, login, password string) error {
@@ -101,7 +106,7 @@ func hashPassword(s string) (string, error) {
 }
 
 func (bl BusinessLogic) checkPassword(ctx context.Context, login, password string) error {
-	u, err := bl.Db.GetUserByLogin(ctx, login)
+	u, err := bl.db.GetUserByLogin(ctx, login)
 	if err != nil {
 		return err
 	}
