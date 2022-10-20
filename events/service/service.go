@@ -5,6 +5,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/bubo-py/McK/contextHelpers"
 	"github.com/bubo-py/McK/events/repositories"
 	"github.com/bubo-py/McK/types"
 )
@@ -88,7 +89,16 @@ func (bl BusinessLogic) GetEvents(ctx context.Context, f types.Filters) ([]types
 }
 
 func (bl BusinessLogic) GetEvent(ctx context.Context, id int64) (types.Event, error) {
-	return bl.db.GetEvent(ctx, id)
+	e, err := bl.db.GetEvent(ctx, id)
+	if err != nil {
+		return e, nil
+	}
+
+	e.StartTime = bl.eventToUserTime(ctx, e.StartTime)
+	e.EndTime = bl.eventToUserTime(ctx, e.EndTime)
+	e.AlertTime = bl.eventToUserTime(ctx, e.AlertTime)
+
+	return e, nil
 }
 
 func (bl BusinessLogic) AddEvent(ctx context.Context, e types.Event) error {
@@ -124,11 +134,15 @@ func (bl BusinessLogic) UpdateEvent(ctx context.Context, e types.Event, id int64
 		}
 	}
 
+	e = bl.eventToUTC(ctx, e)
+
 	return bl.db.UpdateEvent(ctx, e, id)
 }
 
 func (bl BusinessLogic) eventToUserTime(ctx context.Context, t time.Time) time.Time {
-	location, err := time.LoadLocation(ctx.Value("timezone").(string))
+	userLocation := contextHelpers.RetrieveTimezoneFromContext(ctx)
+
+	location, err := time.LoadLocation(userLocation)
 	if err != nil {
 		return t
 	}
@@ -138,7 +152,7 @@ func (bl BusinessLogic) eventToUserTime(ctx context.Context, t time.Time) time.T
 }
 
 func (bl BusinessLogic) eventToUTC(ctx context.Context, e types.Event) types.Event {
-	userLocation, _ := ctx.Value("timezone").(string)
+	userLocation := contextHelpers.RetrieveTimezoneFromContext(ctx)
 
 	startTimeWithLocation := bl.newDateWithLocation(e.StartTime, userLocation)
 	e.StartTime = startTimeWithLocation.In(time.UTC)

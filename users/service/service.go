@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log"
 
+	"github.com/bubo-py/McK/contextHelpers"
 	"github.com/bubo-py/McK/types"
 	"github.com/bubo-py/McK/users/repositories"
 	"golang.org/x/crypto/bcrypt"
@@ -58,7 +59,7 @@ func (bl BusinessLogic) UpdateUser(ctx context.Context, u types.User, id int64) 
 		u.Password = hashedPwd
 	}
 
-	currentUserLogin := ctx.Value("userLogin").(string)
+	currentUserLogin := contextHelpers.RetrieveLoginFromContext(ctx)
 
 	currentUser, _ := bl.db.GetUserByLogin(ctx, currentUserLogin)
 	if currentUser.ID != id {
@@ -69,7 +70,7 @@ func (bl BusinessLogic) UpdateUser(ctx context.Context, u types.User, id int64) 
 }
 
 func (bl BusinessLogic) DeleteUser(ctx context.Context, id int64) error {
-	currentUserLogin := ctx.Value("userLogin").(string)
+	currentUserLogin := contextHelpers.RetrieveLoginFromContext(ctx)
 
 	currentUser, _ := bl.db.GetUserByLogin(ctx, currentUserLogin)
 	if currentUser.ID != id {

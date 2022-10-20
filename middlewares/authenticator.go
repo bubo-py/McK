@@ -1,19 +1,12 @@
 package middlewares
 
 import (
-	"context"
 	"encoding/json"
 	"log"
 	"net/http"
 
+	"github.com/bubo-py/McK/contextHelpers"
 	"github.com/bubo-py/McK/users/service"
-)
-
-type contextKey string
-
-var (
-	loginKey    contextKey = "login"
-	timezoneKey contextKey = "timezone"
 )
 
 func Authenticate(bl service.BusinessLogicInterface) func(next http.Handler) http.Handler {
@@ -38,10 +31,18 @@ func Authenticate(bl service.BusinessLogicInterface) func(next http.Handler) htt
 				return
 			}
 
-			user, _ := bl.GetUserByLogin(r.Context(), login)
+			user, err := bl.GetUserByLogin(r.Context(), login)
+			if err != nil {
+				w.WriteHeader(http.StatusUnauthorized)
+				err = json.NewEncoder(w).Encode(err.Error())
+				if err != nil {
+					log.Println(err)
+				}
+				return
+			}
 
-			ctxWithUser := context.WithValue(r.Context(), loginKey, user.Login)
-			ctxWithUser = context.WithValue(r.Context(), timezoneKey, user.Timezone)
+			ctxWithUser := contextHelpers.WriteLoginToContext(r.Context(), user.Login)
+			ctxWithUser = contextHelpers.WriteTimezoneToContext(r.Context(), user.Timezone)
 
 			rWithUser := r.WithContext(ctxWithUser)
 			next.ServeHTTP(w, rWithUser)
