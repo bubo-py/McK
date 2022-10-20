@@ -48,12 +48,21 @@ func Serve(ctx context.Context) {
 
 	// Router setup
 	r := chi.NewRouter()
-	r.Use(middlewares.Authenticate(usersBl))
+
 	eventsHandler := eventsHandlers.InitHandler(eventsBl)
-	r.Mount("/api/events", eventsRouters.EventsRoutes(eventsHandler))
+	r.Group(func(r chi.Router) {
+		r.Use(middlewares.Authenticate(usersBl))
+		r.Mount("/api/events", eventsRouters.EventsRoutes(eventsHandler))
+	})
 
 	usersHandler := usersHandlers.InitHandler(usersBl)
-	r.Mount("/api/users", userRouters.UserRoutes(usersHandler))
+	r.Group(func(r chi.Router) {
+		r.Use(middlewares.Authenticate(usersBl))
+		r.Mount("/api/users", userRouters.UserRoutes(usersHandler))
+	})
+
+	// Unprotected route
+	r.Post("/api/users", usersHandler.AddUserHandler)
 
 	port := os.Getenv("LISTEN_AND_SERVE_PORT")
 	log.Printf("Starting an HTTP server on port %v", port)
