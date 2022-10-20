@@ -27,7 +27,12 @@ func (h Handler) AddUserHandler(w http.ResponseWriter, r *http.Request) {
 	var u types.User
 	err := json.NewDecoder(r.Body).Decode(&u)
 	if err != nil {
-		log.Println(err)
+		w.WriteHeader(http.StatusBadRequest)
+		err = json.NewEncoder(w).Encode(err.Error())
+		if err != nil {
+			log.Println(err)
+		}
+		return
 	}
 
 	u, err = h.bl.AddUser(r.Context(), u)
@@ -74,7 +79,12 @@ func (h Handler) UpdateUserHandler(w http.ResponseWriter, r *http.Request) {
 	var u types.User
 	err = json.NewDecoder(r.Body).Decode(&u)
 	if err != nil {
-		log.Println(err)
+		w.WriteHeader(http.StatusBadRequest)
+		err = json.NewEncoder(w).Encode(err.Error())
+		if err != nil {
+			log.Println(err)
+		}
+		return
 	}
 	u.ID = id
 

@@ -112,7 +112,12 @@ func (h Handler) AddEventHandler(w http.ResponseWriter, r *http.Request) {
 	var e types.Event
 	err := json.NewDecoder(r.Body).Decode(&e)
 	if err != nil {
-		log.Println(err)
+		w.WriteHeader(http.StatusBadRequest)
+		err = json.NewEncoder(w).Encode(err.Error())
+		if err != nil {
+			log.Println(err)
+		}
+		return
 	}
 
 	err = h.bl.AddEvent(r.Context(), e)
@@ -159,7 +164,12 @@ func (h Handler) UpdateEventHandler(w http.ResponseWriter, r *http.Request) {
 	var e types.Event
 	err = json.NewDecoder(r.Body).Decode(&e)
 	if err != nil {
-		log.Println(err)
+		w.WriteHeader(http.StatusBadRequest)
+		err = json.NewEncoder(w).Encode(err.Error())
+		if err != nil {
+			log.Println(err)
+		}
+		return
 	}
 
 	err = h.bl.UpdateEvent(r.Context(), e, id)
