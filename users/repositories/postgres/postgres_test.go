@@ -156,6 +156,48 @@ func TestUpdateUser(t *testing.T) {
 	}
 }
 
+func TestDeleteUser(t *testing.T) {
+	ctx := context.Background()
+
+	db, err := Init(ctx, os.Getenv("PGURL"))
+	if err != nil {
+		t.Error(err)
+	}
+
+	deleteAllUsers(ctx, db)
+
+	user := types.User{
+		ID:       158,
+		Login:    "Hello",
+		Password: "Hello",
+		Timezone: "Asia/Tokyo",
+	}
+
+	user2 := types.User{
+		ID:       2,
+		Login:    "Check The Login",
+		Password: "Hello",
+		Timezone: "Europe/London",
+	}
+
+	_, _ = db.AddUser(ctx, user)
+	_, _ = db.AddUser(ctx, user2)
+
+	err = db.DeleteUser(ctx, 1)
+	if err != nil {
+		t.Error(err)
+	}
+
+	_, err = db.GetUserByLogin(ctx, "Hello")
+	if err == nil {
+		t.Errorf("Should return an error: %v", authErr)
+	} else {
+		if err.Error() != authErr.Error() {
+			t.Errorf("Should return a different error: got %v, expected: %v", err, authErr)
+		}
+	}
+}
+
 func TestGetUserByLogin(t *testing.T) {
 	ctx := context.Background()
 

@@ -8,13 +8,15 @@ import (
 	"testing"
 	"time"
 
+	"github.com/bubo-py/McK/contextHelpers"
 	"github.com/bubo-py/McK/events/repositories/memoryStorage"
 	"github.com/bubo-py/McK/types"
 )
 
-var ctx context.Context
+var timezoneFetchErr = errors.New("failed to fetch timezone from context")
 
 func TestGetEvents(t *testing.T) {
+	ctx := context.Background()
 	ti := time.Date(2015, 5, 15, 20, 30, 0, 0, time.Local)
 	ti2 := time.Date(2017, 9, 15, 20, 30, 0, 0, time.Local)
 	ti3 := time.Date(2019, 12, 16, 20, 30, 0, 0, time.Local)
@@ -121,6 +123,7 @@ func TestGetEvents(t *testing.T) {
 }
 
 func TestAddEvent(t *testing.T) {
+	ctx := context.Background()
 	db := memoryStorage.InitDatabase()
 	bl := InitBusinessLogic(db)
 	ti := time.Date(2020, 5, 15, 20, 30, 0, 0, time.Local)
@@ -227,5 +230,81 @@ func TestValidateLength(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestEventToUserTime(t *testing.T) {
+	ctx := context.Background()
+
+	db := memoryStorage.InitDatabase()
+	bl := InitBusinessLogic(db)
+
+	// UTC time, in Europe/Warsaw should be 12
+	ti := time.Date(2020, 5, 15, 10, 0, 0, 0, time.UTC)
+
+	event := types.Event{
+		ID:        300,
+		Name:      "Daily meeting",
+		StartTime: ti,
+		EndTime:   ti,
+	}
+
+	_, err := bl.eventToUserTime(ctx, event.StartTime)
+	if err == nil {
+		t.Errorf("Should return an error: %v", timezoneFetchErr)
+	} else {
+		if err.Error() != timezoneFetchErr.Error() {
+			t.Errorf("Should return a different error: got %v, expected: %v", err, timezoneFetchErr)
+		}
+	}
+
+	ctx = contextHelpers.WriteTimezoneToContext(ctx, "Europe/Warsaw")
+
+	event.StartTime, err = bl.eventToUserTime(ctx, event.StartTime)
+	if err != nil {
+		t.Error(err)
+	}
+
+	if event.StartTime.Hour() != 12 {
+		t.Errorf("Failed to convert timezone: got hour: %d, expected: %d", event.StartTime.Hour(), 12)
+	}
+
+}
+
+func TestEventToUTC(t *testing.T) {
+	ctx := context.Background()
+
+	db := memoryStorage.InitDatabase()
+	bl := InitBusinessLogic(db)
+
+	loc, _ := time.LoadLocation("Europe/Warsaw")
+
+	// Should convert to 10 UTC
+	ti := time.Date(2020, 5, 15, 12, 0, 0, 0, loc)
+	event := types.Event{
+		ID:        300,
+		Name:      "Daily meeting",
+		StartTime: ti,
+		EndTime:   ti,
+	}
+
+	_, err := bl.eventToUTC(ctx, event)
+	if err == nil {
+		t.Errorf("Should return an error: %v", timezoneFetchErr)
+	} else {
+		if err.Error() != timezoneFetchErr.Error() {
+			t.Errorf("Should return a different error: got %v, expected: %v", err, timezoneFetchErr)
+		}
+	}
+
+	ctx = contextHelpers.WriteTimezoneToContext(ctx, "Europe/Warsaw")
+
+	event, err = bl.eventToUTC(ctx, event)
+	if err != nil {
+		t.Error(err)
+	}
+
+	if event.StartTime.Hour() != 10 {
+		t.Errorf("Failed to convert timezone: got hour: %d, expected: %d", event.StartTime.Hour(), 10)
 	}
 }
