@@ -14,6 +14,7 @@ func Authenticate(bl service.BusinessLogicInterface) func(next http.Handler) htt
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			login, pwd, ok := r.BasicAuth()
 			if !ok {
+				w.WriteHeader(http.StatusUnauthorized)
 				err := json.NewEncoder(w).Encode("please provide your credentials")
 				if err != nil {
 					log.Println(err)
