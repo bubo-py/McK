@@ -14,14 +14,13 @@ func TestMain(m *testing.M) {
 	// Setup
 	ctx := context.Background()
 
-	db, err := PostgresInit(ctx, os.Getenv("PGURL"))
+	db, err := Init(ctx, os.Getenv("PGURL"))
 	if err != nil {
 		log.Fatalf("Could not initialize database: %v", err)
-		os.Exit(1)
 	}
 
 	_, _ = db.pool.Exec(ctx, "DROP TABLE events")
-	_, _ = db.pool.Exec(ctx, "DROP TABLE migration")
+	_, _ = db.pool.Exec(ctx, "DROP TABLE events_migration")
 	_ = RunMigration(ctx, db)
 
 	code := m.Run()
@@ -36,7 +35,7 @@ func TestPostgresDb_GetEvent(t *testing.T) {
 	ti2 := time.Date(2022, 5, 15, 20, 30, 0, 0, time.Local)
 
 	ctx := context.Background()
-	db, err := PostgresInit(ctx, os.Getenv("PGURL"))
+	db, err := Init(ctx, os.Getenv("PGURL"))
 	if err != nil {
 		t.Error(err)
 	}
@@ -105,7 +104,7 @@ func TestPostgresDb_DeleteEvent(t *testing.T) {
 	ti2 := time.Date(2022, 9, 16, 20, 30, 0, 0, time.Local)
 
 	ctx := context.Background()
-	db, err := PostgresInit(ctx, os.Getenv("PGURL"))
+	db, err := Init(ctx, os.Getenv("PGURL"))
 	if err != nil {
 		t.Error(err)
 	}

@@ -141,18 +141,19 @@ paths:
     description: A path for user management
     post:
       summary: Add a new user
+      security: []
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/User'
+              $ref: '#/components/schemas/createUser'
       responses:
         201:
           description: User created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/User'
+                $ref: '#/components/schemas/returnUser'
         400:
           description: Bad request
           content:
@@ -180,7 +181,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/User'
+                $ref: '#/components/schemas/returnUser'
         404:
           description: User with specified ID not found
           content:
@@ -268,16 +269,12 @@ components:
             - id
         - $ref: '#/components/schemas/createEvent'
 
-    User:
-      allOf:
-        - type: object
-          properties:
-            id:
-              type: integer
-              example: 2
-          required:
-            - id
-        - $ref: '#/components/schemas/createUser'
+    returnUser:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 2
 
     createUser:
       type: object
@@ -289,8 +286,8 @@ components:
           type: string
           example: hello12345
         timezone:
-          format: date-time
-          example: 2022-09-14T10:30:00.000+5:30
+          format: string
+          example: "Europe/London"
       required:
         - login
         - password
@@ -318,3 +315,12 @@ components:
         errorDescription:
           type: string
           example: The server cannot process the request due to something that is perceived to be a client error
+
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+
+security:
+  - basicAuth: []
+

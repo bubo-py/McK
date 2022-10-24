@@ -6,28 +6,63 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/bubo-py/McK/handlers"
-	"github.com/bubo-py/McK/repositories/postgres"
-	"github.com/bubo-py/McK/service"
+	eventsHandlers "github.com/bubo-py/McK/events/handlers"
+	eventsPostgres "github.com/bubo-py/McK/events/repositories/postgres"
+	eventsRouters "github.com/bubo-py/McK/events/routers"
+	eventsService "github.com/bubo-py/McK/events/service"
+	"github.com/bubo-py/McK/middlewares"
+	usersHandlers "github.com/bubo-py/McK/users/handlers"
+	usersPostgres "github.com/bubo-py/McK/users/repositories/postgres"
+	userRouters "github.com/bubo-py/McK/users/routers"
+	usersService "github.com/bubo-py/McK/users/service"
+	"github.com/go-chi/chi"
 )
 
 func Serve(ctx context.Context) {
+	// Database setup
 	connString := os.Getenv("PGURL")
 
-	db, err := postgres.PostgresInit(ctx, connString)
+	eventsDb, err := eventsPostgres.Init(ctx, connString)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	bl := service.InitBusinessLogic(db)
-
-	err = postgres.RunMigration(ctx, db)
+	usersDb, err := usersPostgres.Init(ctx, connString)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	handler := handlers.InitHandler(bl)
-	r := handlers.InitRouter(handler)
+	err = eventsPostgres.RunMigration(ctx, eventsDb)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = usersPostgres.RunMigration(ctx, usersDb)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Business logic setup
+	eventsBl := eventsService.InitBusinessLogic(eventsDb)
+	usersBl := usersService.InitBusinessLogic(usersDb)
+
+	// Router setup
+	r := chi.NewRouter()
+
+	eventsHandler := eventsHandlers.InitHandler(eventsBl)
+	r.Group(func(r chi.Router) {
+		r.Use(middlewares.Authenticate(usersBl))
+		r.Mount("/api/events", eventsRouters.EventsRoutes(eventsHandler))
+	})
+
+	usersHandler := usersHandlers.InitHandler(usersBl)
+	r.Group(func(r chi.Router) {
+		r.Use(middlewares.Authenticate(usersBl))
+		r.Mount("/api/users", userRouters.UserRoutes(usersHandler))
+	})
+
+	// Unprotected route
+	r.Post("/api/users", usersHandler.AddUserHandler)
 
 	port := os.Getenv("LISTEN_AND_SERVE_PORT")
 	log.Printf("Starting an HTTP server on port %v", port)

@@ -26,12 +26,12 @@ type eventDb struct {
 	AlertTime   time.Time `db:"alerttime,omitempty"`
 }
 
-type PostgresDb struct {
+type Db struct {
 	pool *pgxpool.Pool
 }
 
-func PostgresInit(ctx context.Context, connString string) (PostgresDb, error) {
-	var pg PostgresDb
+func Init(ctx context.Context, connString string) (Db, error) {
+	var pg Db
 
 	dbPool, err := pgxpool.Connect(ctx, connString)
 	if err != nil {
@@ -44,7 +44,7 @@ func PostgresInit(ctx context.Context, connString string) (PostgresDb, error) {
 	return pg, nil
 }
 
-func (pg PostgresDb) migrate(ctx context.Context, mFS embed.FS, rootDir, table string) error {
+func (pg Db) migrate(ctx context.Context, mFS embed.FS, rootDir, table string) error {
 	c, err := pg.pool.Acquire(ctx)
 	if err != nil {
 		return err
@@ -76,17 +76,17 @@ func (pg PostgresDb) migrate(ctx context.Context, mFS embed.FS, rootDir, table s
 	return nil
 }
 
-func RunMigration(ctx context.Context, db PostgresDb) error {
-	err := db.migrate(ctx, f, "migrations", "migration")
+func RunMigration(ctx context.Context, db Db) error {
+	err := db.migrate(ctx, f, "migrations", "events_migration")
 	if err != nil {
 		return err
 	}
 
-	log.Println("Migrations run correctly")
+	log.Println("Migrations from events domain run correctly")
 	return nil
 }
 
-func (pg PostgresDb) GetEvents(ctx context.Context) ([]types.Event, error) {
+func (pg Db) GetEvents(ctx context.Context) ([]types.Event, error) {
 	var s []types.Event
 	var events []*eventDb
 
@@ -104,7 +104,7 @@ func (pg PostgresDb) GetEvents(ctx context.Context) ([]types.Event, error) {
 	return s, nil
 }
 
-func (pg PostgresDb) GetEvent(ctx context.Context, id int64) (types.Event, error) {
+func (pg Db) GetEvent(ctx context.Context, id int64) (types.Event, error) {
 	sb := sqlbuilder.PostgreSQL.NewSelectBuilder()
 	var e eventDb
 
@@ -131,7 +131,7 @@ func (pg PostgresDb) GetEvent(ctx context.Context, id int64) (types.Event, error
 	return types.Event(e), errors.New("event with specified id not found")
 }
 
-func (pg PostgresDb) AddEvent(ctx context.Context, e types.Event) error {
+func (pg Db) AddEvent(ctx context.Context, e types.Event) error {
 	ib := sqlbuilder.PostgreSQL.NewInsertBuilder()
 
 	ib.InsertInto("events")
@@ -148,7 +148,7 @@ func (pg PostgresDb) AddEvent(ctx context.Context, e types.Event) error {
 	return nil
 }
 
-func (pg PostgresDb) DeleteEvent(ctx context.Context, id int64) error {
+func (pg Db) DeleteEvent(ctx context.Context, id int64) error {
 	db := sqlbuilder.PostgreSQL.NewDeleteBuilder()
 
 	exists, err := pg.exists(ctx, id)
@@ -173,7 +173,7 @@ func (pg PostgresDb) DeleteEvent(ctx context.Context, id int64) error {
 	return errors.New("event with specified id not found")
 }
 
-func (pg PostgresDb) UpdateEvent(ctx context.Context, e types.Event, id int64) error {
+func (pg Db) UpdateEvent(ctx context.Context, e types.Event, id int64) error {
 	ub := sqlbuilder.PostgreSQL.NewUpdateBuilder()
 
 	exists, err := pg.exists(ctx, id)
@@ -181,32 +181,46 @@ func (pg PostgresDb) UpdateEvent(ctx context.Context, e types.Event, id int64) e
 		return err
 	}
 
-	if exists == true {
-		ub.Update("events")
-		ub.Set(
-			ub.Assign("name", e.Name),
-			ub.Assign("startTime", e.StartTime),
-			ub.Assign("endTime", e.EndTime),
-			ub.Assign("description", e.Description),
-			ub.Assign("alertTime", e.AlertTime),
-		)
-
-		ub.Where(ub.Equal("id", id))
-
-		q, args := ub.Build()
-
-		_, err := pg.pool.Exec(ctx, q, args...)
-		if err != nil {
-			return err
-		}
-
-		return nil
+	if exists == false {
+		return errors.New("event with specified id not found")
 	}
 
-	return errors.New("event with specified id not found")
+	ub.Update("events")
+
+	if e.Name != "" {
+		ub.SetMore(ub.Assign("name", e.Name))
+	}
+
+	if e.StartTime.IsZero() == false {
+		ub.SetMore(ub.Assign("startTime", e.StartTime))
+	}
+
+	if e.EndTime.IsZero() == false {
+		ub.SetMore(ub.Assign("endTime", e.EndTime))
+	}
+
+	if e.Description == "" {
+		ub.SetMore(ub.Assign("description", e.Description))
+	}
+
+	if e.AlertTime.IsZero() == false {
+		ub.SetMore(ub.Assign("alertTime", e.AlertTime))
+	}
+
+	ub.Where(ub.Equal("id", id))
+
+	q, args := ub.Build()
+
+	_, err = pg.pool.Exec(ctx, q, args...)
+	if err != nil {
+		return err
+	}
+
+	return nil
+
 }
 
-func (pg PostgresDb) GetEventsFiltered(ctx context.Context, f types.Filters) ([]types.Event, error) {
+func (pg Db) GetEventsFiltered(ctx context.Context, f types.Filters) ([]types.Event, error) {
 	var filtered []types.Event
 	var events []*eventDb
 
@@ -241,7 +255,7 @@ func (pg PostgresDb) GetEventsFiltered(ctx context.Context, f types.Filters) ([]
 	return filtered, nil
 }
 
-func (pg PostgresDb) exists(ctx context.Context, id int64) (bool, error) {
+func (pg Db) exists(ctx context.Context, id int64) (bool, error) {
 	sb := sqlbuilder.PostgreSQL.NewSelectBuilder()
 	var exists bool
 
