@@ -4,14 +4,18 @@ import (
 	"context"
 	"embed"
 	"errors"
+	"fmt"
 	"log"
 
+	"github.com/bubo-py/McK/customErrors"
 	"github.com/bubo-py/McK/types"
 	"github.com/georgysavva/scany/pgxscan"
 	"github.com/huandu/go-sqlbuilder"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/jackc/tern/migrate"
 )
+
+var errDB = customErrors.ErrDB
 
 //go:embed migrations
 var f embed.FS
@@ -25,10 +29,10 @@ func Init(ctx context.Context, connString string) (Db, error) {
 
 	dbPool, err := pgxpool.Connect(ctx, connString)
 	if err != nil {
-		return pg, err
+		errDB.Err = err
+		return pg, fmt.Errorf("database initialization error: %w", errDB)
 	}
 
-	//defer dbPool.Close()
 	pg.pool = dbPool
 
 	return pg, nil
@@ -69,7 +73,8 @@ func (pg Db) migrate(ctx context.Context, mFS embed.FS, rootDir, table string) e
 func RunMigration(ctx context.Context, db Db) error {
 	err := db.migrate(ctx, f, "migrations", "users_migration")
 	if err != nil {
-		return err
+		errDB.Err = err
+		return fmt.Errorf("database migration error: %w", errDB)
 	}
 
 	log.Println("Migrations from users domain run correctly")
@@ -89,7 +94,8 @@ func (pg Db) AddUser(ctx context.Context, u types.User) (types.User, error) {
 
 	err := pgxscan.Get(ctx, pg.pool, &u, q, args...)
 	if err != nil {
-		return u, err
+		errDB.Err = err
+		return u, fmt.Errorf("database error: SQL query error: %w", errDB)
 	}
 
 	return u, nil
@@ -128,7 +134,8 @@ func (pg Db) UpdateUser(ctx context.Context, u types.User, id int64) (types.User
 
 	_, err = pg.pool.Exec(ctx, q, args...)
 	if err != nil {
-		return u, err
+		errDB.Err = err
+		return u, fmt.Errorf("database error: SQL query error: %w", errDB)
 	}
 
 	return u, nil
@@ -153,7 +160,8 @@ func (pg Db) DeleteUser(ctx context.Context, id int64) error {
 
 	_, err = pg.pool.Exec(ctx, q, args...)
 	if err != nil {
-		return err
+		errDB.Err = err
+		return fmt.Errorf("database error: SQL query error: %w", errDB)
 	}
 
 	return nil
@@ -172,7 +180,7 @@ func (pg Db) GetUserByLogin(ctx context.Context, login string) (types.User, erro
 	err := pgxscan.Get(ctx, pg.pool, &u, q, args...)
 	if err != nil {
 		log.Println("user with provided login not found")
-		return u, errors.New("incorrect credentials")
+		return u, customErrors.IncorrectCredentials
 	}
 
 	return u, nil

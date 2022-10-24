@@ -6,10 +6,19 @@ import (
 	"log"
 
 	"github.com/bubo-py/McK/contextHelpers"
+	"github.com/bubo-py/McK/customErrors"
 	"github.com/bubo-py/McK/types"
 	"github.com/bubo-py/McK/users/repositories"
 	"golang.org/x/crypto/bcrypt"
 )
+
+var ErrRetrieveLoginFail = customErrors.CustomError{
+	Err: errors.New("failed to fetch login from context"),
+}
+
+var ErrForeignAccount = customErrors.CustomError{
+	Err: errors.New("cannot modify another user's account"),
+}
 
 type BusinessLogicInterface interface {
 	AddUser(ctx context.Context, u types.User) (types.User, error)
@@ -61,7 +70,7 @@ func (bl BusinessLogic) UpdateUser(ctx context.Context, u types.User, id int64) 
 
 	currentUserLogin, ok := contextHelpers.RetrieveLoginFromContext(ctx)
 	if !ok {
-		return u, errors.New("failed to fetch login from context")
+		return u, ErrRetrieveLoginFail
 	}
 
 	currentUser, err := bl.db.GetUserByLogin(ctx, currentUserLogin)
@@ -70,7 +79,7 @@ func (bl BusinessLogic) UpdateUser(ctx context.Context, u types.User, id int64) 
 	}
 
 	if currentUser.ID != id {
-		return u, errors.New("cannot modify another user's account")
+		return u, ErrForeignAccount
 	}
 
 	return bl.db.UpdateUser(ctx, u, id)
@@ -79,12 +88,12 @@ func (bl BusinessLogic) UpdateUser(ctx context.Context, u types.User, id int64) 
 func (bl BusinessLogic) DeleteUser(ctx context.Context, id int64) error {
 	currentUserLogin, ok := contextHelpers.RetrieveLoginFromContext(ctx)
 	if !ok {
-		return errors.New("failed to fetch login from context")
+		return ErrRetrieveLoginFail
 	}
 
 	currentUser, _ := bl.db.GetUserByLogin(ctx, currentUserLogin)
 	if currentUser.ID != id {
-		return errors.New("cannot delete another user's account")
+		return ErrForeignAccount
 	}
 
 	return bl.db.DeleteUser(ctx, id)
@@ -100,7 +109,9 @@ func (bl BusinessLogic) LoginUser(ctx context.Context, login, password string) e
 
 func hashPassword(s string) (string, error) {
 	if len(s) < 5 {
-		return s, errors.New("password should be at least 5 characters")
+		err := customErrors.BadRequest
+		err.Err = errors.New("password should be at least 5 characters")
+		return s, err
 	}
 
 	bytes, err := bcrypt.GenerateFromPassword([]byte(s), bcrypt.DefaultCost)
@@ -110,7 +121,9 @@ func hashPassword(s string) (string, error) {
 
 	s = string(bytes)
 	if len(s) > 60 {
-		return s, errors.New("failed to hash password")
+		err := customErrors.BadRequest
+		err.Err = errors.New("failed to hash password")
+		return s, err
 	}
 
 	return s, nil
@@ -125,7 +138,7 @@ func (bl BusinessLogic) checkPassword(ctx context.Context, login, password strin
 	err = bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(password))
 	if err != nil {
 		log.Println("incorrect password")
-		return errors.New("incorrect credentials")
+		return customErrors.IncorrectCredentials
 	}
 
 	return nil
@@ -133,7 +146,9 @@ func (bl BusinessLogic) checkPassword(ctx context.Context, login, password strin
 
 func validateLogin(s string) error {
 	if len([]rune(s)) > 30 || len([]rune(s)) < 3 {
-		return errors.New("login should be at least 3 and contain up to 30 characters")
+		err := customErrors.BadRequest
+		err.Err = errors.New("login should be at least 3 and contain up to 30 characters")
+		return err
 	}
 
 	return nil

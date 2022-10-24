@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/bubo-py/McK/contextHelpers"
+	"github.com/bubo-py/McK/customErrors"
 	"github.com/bubo-py/McK/users/service"
 )
 
@@ -15,7 +16,7 @@ func Authenticate(bl service.BusinessLogicInterface) func(next http.Handler) htt
 			login, pwd, ok := r.BasicAuth()
 			if !ok {
 				w.WriteHeader(http.StatusUnauthorized)
-				err := json.NewEncoder(w).Encode("please provide your credentials")
+				err := json.NewEncoder(w).Encode(customErrors.Unauthorized.Error())
 				if err != nil {
 					log.Println(err)
 				}
