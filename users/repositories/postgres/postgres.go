@@ -15,7 +15,7 @@ import (
 	"github.com/jackc/tern/migrate"
 )
 
-var errDB = customErrors.ErrDB
+var errUnexpected = customErrors.ErrUnexpected
 
 //go:embed migrations
 var f embed.FS
@@ -29,8 +29,8 @@ func Init(ctx context.Context, connString string) (Db, error) {
 
 	dbPool, err := pgxpool.Connect(ctx, connString)
 	if err != nil {
-		errDB.Err = err
-		return pg, fmt.Errorf("database initialization error: %w", errDB)
+		errUnexpected.Err = err
+		return pg, fmt.Errorf("database initialization error: %w", errUnexpected)
 	}
 
 	pg.pool = dbPool
@@ -73,8 +73,8 @@ func (pg Db) migrate(ctx context.Context, mFS embed.FS, rootDir, table string) e
 func RunMigration(ctx context.Context, db Db) error {
 	err := db.migrate(ctx, f, "migrations", "users_migration")
 	if err != nil {
-		errDB.Err = err
-		return fmt.Errorf("database migration error: %w", errDB)
+		errUnexpected.Err = err
+		return fmt.Errorf("database migration error: %w", errUnexpected)
 	}
 
 	log.Println("Migrations from users domain run correctly")
@@ -94,8 +94,8 @@ func (pg Db) AddUser(ctx context.Context, u types.User) (types.User, error) {
 
 	err := pgxscan.Get(ctx, pg.pool, &u, q, args...)
 	if err != nil {
-		errDB.Err = err
-		return u, fmt.Errorf("database error: SQL query error: %w", errDB)
+		errUnexpected.Err = err
+		return u, fmt.Errorf("database error: SQL query error: %w", errUnexpected)
 	}
 
 	return u, nil
@@ -134,8 +134,8 @@ func (pg Db) UpdateUser(ctx context.Context, u types.User, id int64) (types.User
 
 	_, err = pg.pool.Exec(ctx, q, args...)
 	if err != nil {
-		errDB.Err = err
-		return u, fmt.Errorf("database error: SQL query error: %w", errDB)
+		errUnexpected.Err = err
+		return u, fmt.Errorf("database error: SQL query error: %w", errUnexpected)
 	}
 
 	return u, nil
@@ -160,8 +160,8 @@ func (pg Db) DeleteUser(ctx context.Context, id int64) error {
 
 	_, err = pg.pool.Exec(ctx, q, args...)
 	if err != nil {
-		errDB.Err = err
-		return fmt.Errorf("database error: SQL query error: %w", errDB)
+		errUnexpected.Err = err
+		return fmt.Errorf("database error: SQL query error: %w", errUnexpected)
 	}
 
 	return nil

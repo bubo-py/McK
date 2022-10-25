@@ -20,10 +20,10 @@ var IncorrectCredentials = CustomError{
 	Err: errors.New("incorrect credentials"),
 }
 
-var Unauthorized = CustomError{
+var ErrUnauthorized = CustomError{
 	Err: errors.New("please provide your credentials"),
 }
 
-var ErrDB = CustomError{
-	Err: errors.New("an error occurred in database"),
+var ErrUnexpected = CustomError{
+	Err: errors.New("an unexpected error occurred"),
 }

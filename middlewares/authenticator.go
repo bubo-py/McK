@@ -16,7 +16,7 @@ func Authenticate(bl service.BusinessLogicInterface) func(next http.Handler) htt
 			login, pwd, ok := r.BasicAuth()
 			if !ok {
 				w.WriteHeader(http.StatusUnauthorized)
-				err := json.NewEncoder(w).Encode(customErrors.Unauthorized.Error())
+				err := json.NewEncoder(w).Encode(customErrors.ErrUnauthorized.Error())
 				if err != nil {
 					log.Println(err)
 				}
