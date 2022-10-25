@@ -12,6 +12,8 @@ import (
 	"github.com/bubo-py/McK/types"
 )
 
+//go:generate mockgen -destination=../repositories/mocks/mockService.go -package=mocks github.com/bubo-py/McK/events/service BusinessLogicInterface
+
 type BusinessLogicInterface interface {
 	GetEvents(ctx context.Context, f types.Filters) ([]types.Event, error)
 	GetEvent(ctx context.Context, id int64) (types.Event, error)
