@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/bubo-py/McK/customErrors"
 	"github.com/bubo-py/McK/events/service"
 	"github.com/bubo-py/McK/types"
 	"github.com/go-chi/chi"
@@ -32,10 +33,11 @@ func (h Handler) GetEventsHandler(w http.ResponseWriter, r *http.Request) {
 		day, err := strconv.Atoi(query.Get("day"))
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
-			err = json.NewEncoder(w).Encode(err.Error())
+			err = json.NewEncoder(w).Encode(customErrors.BadRequest.Error())
 			if err != nil {
 				log.Println(err)
 			}
+			return
 		}
 		f.Day = day
 	}
@@ -45,10 +47,11 @@ func (h Handler) GetEventsHandler(w http.ResponseWriter, r *http.Request) {
 		month, err := strconv.Atoi(query.Get("month"))
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
-			err = json.NewEncoder(w).Encode(err.Error())
+			err = json.NewEncoder(w).Encode(customErrors.BadRequest.Error())
 			if err != nil {
 				log.Println(err)
 			}
+			return
 		}
 		f.Month = month
 	}
@@ -58,10 +61,11 @@ func (h Handler) GetEventsHandler(w http.ResponseWriter, r *http.Request) {
 		year, err := strconv.Atoi(query.Get("year"))
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
-			err = json.NewEncoder(w).Encode(err.Error())
+			err = json.NewEncoder(w).Encode(customErrors.BadRequest.Error())
 			if err != nil {
 				log.Println(err)
 			}
+			return
 		}
 		f.Year = year
 	}
@@ -113,7 +117,7 @@ func (h Handler) AddEventHandler(w http.ResponseWriter, r *http.Request) {
 	err := json.NewDecoder(r.Body).Decode(&e)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		err = json.NewEncoder(w).Encode(err.Error())
+		err = json.NewEncoder(w).Encode(customErrors.BadRequest.Error())
 		if err != nil {
 			log.Println(err)
 		}

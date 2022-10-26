@@ -26,10 +26,6 @@ var ErrRetrieveTimezoneFail = customErrors.CustomError{
 	Err: errors.New("failed to fetch timezone from context"),
 }
 
-var ErrFilterValue = customErrors.CustomError{
-	Err: errors.New("invalid filter value"),
-}
-
 type BusinessLogic struct {
 	db repositories.DatabaseRepository
 }
@@ -75,19 +71,19 @@ func (bl BusinessLogic) GetEvents(ctx context.Context, f types.Filters) ([]types
 
 	if f.Day != 0 {
 		if f.Day <= 0 || f.Day >= 32 {
-			return s, fmt.Errorf("%w: day", ErrFilterValue)
+			return s, fmt.Errorf("%w: day", customErrors.BadRequest)
 		}
 	}
 
 	if f.Month != 0 {
 		if f.Month <= 0 || f.Month >= 13 {
-			return s, fmt.Errorf("%w: month", ErrFilterValue)
+			return s, fmt.Errorf("%w: month", customErrors.BadRequest)
 		}
 	}
 
 	if f.Year != 0 {
 		if f.Year <= 0 {
-			return s, fmt.Errorf("%w: year", ErrFilterValue)
+			return s, fmt.Errorf("%w: year", customErrors.BadRequest)
 		}
 	}
 
