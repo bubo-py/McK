@@ -12,6 +12,8 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+//go:generate mockgen -destination=../repositories/mocks/mockService.go -package=mocks github.com/bubo-py/McK/users/service BusinessLogicInterface
+
 var ErrRetrieveLoginFail = customErrors.CustomError{
 	Err: errors.New("failed to fetch login from context"),
 }
