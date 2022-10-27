@@ -5,7 +5,8 @@ import (
 )
 
 type CustomError struct {
-	Err error
+	Err       error
+	ErrorType string
 }
 
 func (ce CustomError) Error() string {
@@ -13,7 +14,8 @@ func (ce CustomError) Error() string {
 }
 
 var BadRequest = CustomError{
-	Err: errors.New("the server cannot process the request"),
+	Err:       errors.New("the server cannot process the request"),
+	ErrorType: "BadRequest",
 }
 
 var IncorrectCredentials = CustomError{
@@ -25,5 +27,6 @@ var ErrUnauthorized = CustomError{
 }
 
 var ErrUnexpected = CustomError{
-	Err: errors.New("an unexpected error occurred"),
+	Err:       errors.New("an unexpected error occurred"),
+	ErrorType: "Unexpected",
 }
