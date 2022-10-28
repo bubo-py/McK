@@ -136,7 +136,7 @@ func (bl BusinessLogic) GetEvent(ctx context.Context, id int64) (types.Event, er
 	if err != nil {
 		return e, err
 	}
-	fmt.Println(err)
+
 	return e, nil
 }
 

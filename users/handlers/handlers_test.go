@@ -18,15 +18,18 @@ import (
 
 func TestAddUserHandler(t *testing.T) {
 	testCases := []struct {
-		jsonStr       string
-		userToMock    types.User
-		mockErrReturn error
-		expJSONReturn string
-		expIDReturn   string
-		expStatusCode int
+		testName         string
+		decodeErrPresent bool
+		jsonStr          string
+		userToMock       types.User
+		mockErrReturn    error
+		expJSONReturn    string
+		expIDReturn      string
+		expStatusCode    int
 	}{
 		{
-			jsonStr: `{"id":1,"login":"hello","password":"hello","timezone":"Europe/London"}`,
+			testName: "AddUser_positive_return",
+			jsonStr:  `{"id":1,"login":"hello","password":"hello","timezone":"Europe/London"}`,
 			userToMock: types.User{
 				ID:       1,
 				Login:    "hello",
@@ -37,7 +40,8 @@ func TestAddUserHandler(t *testing.T) {
 			expStatusCode: 200,
 		},
 		{
-			jsonStr: `{"id":2,"login":"TooLongLogin","password":"hello","timezone":"Europe/London"}`,
+			testName: "AddUser_BadRequest",
+			jsonStr:  `{"id":2,"login":"TooLongLogin","password":"hello","timezone":"Europe/London"}`,
 			userToMock: types.User{
 				ID:       2,
 				Login:    "TooLongLogin",
@@ -48,10 +52,30 @@ func TestAddUserHandler(t *testing.T) {
 			expJSONReturn: `{"ErrorType":"BadRequest","ErrorMessage":"the server cannot process the request"}`,
 			expStatusCode: 400,
 		},
+		{
+			testName:         "AddUser_DecodeErr1",
+			decodeErrPresent: true,
+			jsonStr:          `{json string}`,
+			expJSONReturn:    `{"ErrorType":"BadRequest","ErrorMessage":"the server cannot process the request"}`,
+			expStatusCode:    400,
+		},
+		{
+			testName:         "AddUser_DecodeErr2",
+			decodeErrPresent: true,
+			jsonStr:          `{"hello": world}`,
+			expJSONReturn:    `{"ErrorType":"BadRequest","ErrorMessage":"the server cannot process the request"}`,
+			expStatusCode:    400,
+		},
+		{
+			testName:         "AddUser_DecodeErr3",
+			decodeErrPresent: true,
+			jsonStr:          `{"name": """"false""""}`,
+			expJSONReturn:    `{"ErrorType":"BadRequest","ErrorMessage":"the server cannot process the request"}`,
+			expStatusCode:    400,
+		},
 	}
-	for i, tc := range testCases {
-		testName := fmt.Sprintf("Test %d", i+1)
-		t.Run(testName, func(t *testing.T) {
+	for _, tc := range testCases {
+		t.Run(tc.testName, func(t *testing.T) {
 
 			// mock request
 			r := httptest.NewRequest("POST", "/api/users", bytes.NewBuffer([]byte(tc.jsonStr)))
@@ -62,7 +86,10 @@ func TestAddUserHandler(t *testing.T) {
 			defer mockCtrl.Finish()
 
 			mockBL := mocks.NewMockBusinessLogicInterface(mockCtrl)
-			mockBL.EXPECT().AddUser(r.Context(), tc.userToMock).Return(tc.userToMock, tc.mockErrReturn)
+
+			if !tc.decodeErrPresent {
+				mockBL.EXPECT().AddUser(r.Context(), tc.userToMock).Return(tc.userToMock, tc.mockErrReturn)
+			}
 
 			// create handler with mocks
 			handler := InitHandler(mockBL)
@@ -89,63 +116,9 @@ func TestAddUserHandler(t *testing.T) {
 	}
 }
 
-func TestAddUserHandlerWithDecodeError(t *testing.T) {
-	testCases := []struct {
-		jsonStr       string
-		expJSONReturn string
-		expStatusCode int
-	}{
-		{
-			jsonStr:       `{json string}`,
-			expJSONReturn: `{"ErrorType":"BadRequest","ErrorMessage":"the server cannot process the request"}`,
-			expStatusCode: 400,
-		},
-		{
-			jsonStr:       `{"hello": world}`,
-			expJSONReturn: `{"ErrorType":"BadRequest","ErrorMessage":"the server cannot process the request"}`,
-			expStatusCode: 400,
-		},
-		{
-			jsonStr:       `{"name": """"false""""}`,
-			expJSONReturn: `{"ErrorType":"BadRequest","ErrorMessage":"the server cannot process the request"}`,
-			expStatusCode: 400,
-		},
-	}
-	for i, tc := range testCases {
-		testName := fmt.Sprintf("Test %d", i+1)
-		t.Run(testName, func(t *testing.T) {
-			fmt.Println(tc.jsonStr)
-			// mock request
-			r := httptest.NewRequest("POST", "/api/users", bytes.NewBuffer([]byte(tc.jsonStr)))
-			w := httptest.NewRecorder()
-
-			// mock business logic
-			mockCtrl := gomock.NewController(t)
-			defer mockCtrl.Finish()
-
-			mockBL := mocks.NewMockBusinessLogicInterface(mockCtrl)
-
-			// create handler with mocks
-			handler := InitHandler(mockBL)
-			handler.AddUserHandler(w, r)
-
-			resp := w.Result()
-
-			data, err := io.ReadAll(resp.Body)
-			if err != nil {
-				t.Error(err)
-			}
-
-			require.JSONEqf(t, tc.expJSONReturn, string(data), "JSON data should to be equal")
-
-			require.Equal(t, tc.expStatusCode, resp.StatusCode, "Wrong status code returned")
-
-		})
-	}
-}
-
 func TestDeleteUserHandler(t *testing.T) {
 	testCases := []struct {
+		testName      string
 		URLParamValue string
 		expID         int64
 		mockErrReturn error
@@ -153,16 +126,19 @@ func TestDeleteUserHandler(t *testing.T) {
 		expStatusCode int
 	}{
 		{
+			testName:      "DeleteUser_positive_paramValue_5",
 			URLParamValue: "5",
 			expID:         5,
 			expStatusCode: 204,
 		},
 		{
+			testName:      "DeleteUser_positive_paramValue_450",
 			URLParamValue: "450",
 			expID:         450,
 			expStatusCode: 204,
 		},
 		{
+			testName:      "DeleteUser_BadRequest",
 			URLParamValue: "450",
 			expID:         450,
 			mockErrReturn: customErrors.ErrUnexpected,
@@ -213,16 +189,19 @@ func TestDeleteUserHandler(t *testing.T) {
 
 func TestUpdateUserHandler(t *testing.T) {
 	testCases := []struct {
-		jsonStr       string
-		URLParamValue string
-		expID         int64
-		expIDReturn   string
-		userToMock    types.User
-		mockErrReturn error
-		expJSONReturn string
-		expStatusCode int
+		testName         string
+		decodeErrPresent bool
+		jsonStr          string
+		URLParamValue    string
+		expID            int64
+		expIDReturn      string
+		userToMock       types.User
+		mockErrReturn    error
+		expJSONReturn    string
+		expStatusCode    int
 	}{
 		{
+			testName:      "UpdateUser_positive_return",
 			jsonStr:       `{"id":1,"login":"hello","password":"hello","timezone":"Europe/London"}`,
 			URLParamValue: "1",
 			userToMock: types.User{
@@ -236,6 +215,7 @@ func TestUpdateUserHandler(t *testing.T) {
 			expStatusCode: 200,
 		},
 		{
+			testName:      "UpdateUser_BadRequest",
 			jsonStr:       `{"id":2,"login":"TooLongLogin","password":"hello","timezone":"Europe/London"}`,
 			URLParamValue: "2",
 			userToMock: types.User{
@@ -249,10 +229,39 @@ func TestUpdateUserHandler(t *testing.T) {
 			expJSONReturn: `{"ErrorType":"Unexpected","ErrorMessage":"an unexpected error occurred"}`,
 			expStatusCode: 404,
 		},
+		{
+			testName:         "UpdateUser_DecodeErr1",
+			decodeErrPresent: true,
+			URLParamValue:    "5",
+			jsonStr:          `{json string}`,
+			expJSONReturn:    `{"ErrorType":"BadRequest","ErrorMessage":"the server cannot process the request"}`,
+			expStatusCode:    400,
+		},
+		{
+			testName:         "UpdateUser_DecodeErr2",
+			decodeErrPresent: true,
+			URLParamValue:    "10",
+			jsonStr:          `{"hello": world}`,
+			expJSONReturn:    `{"ErrorType":"BadRequest","ErrorMessage":"the server cannot process the request"}`,
+			expStatusCode:    400,
+		},
+		{
+			testName:         "UpdateUser_DecodeErr3",
+			decodeErrPresent: true,
+			URLParamValue:    "15",
+			jsonStr:          `{"name: false"}`,
+			expJSONReturn:    `{"ErrorType":"BadRequest","ErrorMessage":"the server cannot process the request"}`,
+			expStatusCode:    400,
+		},
+		{
+			testName:         "UpdateUser_StrconvErr",
+			decodeErrPresent: true,
+			URLParamValue:    "1.5",
+			expStatusCode:    400,
+		},
 	}
-	for i, tc := range testCases {
-		testName := fmt.Sprintf("Test %d", i+1)
-		t.Run(testName, func(t *testing.T) {
+	for _, tc := range testCases {
+		t.Run(tc.testName, func(t *testing.T) {
 
 			r := httptest.NewRequest("UPDATE", "/api/users", bytes.NewBuffer([]byte(tc.jsonStr)))
 			w := httptest.NewRecorder()
@@ -267,7 +276,10 @@ func TestUpdateUserHandler(t *testing.T) {
 			defer mockCtrl.Finish()
 
 			mockBL := mocks.NewMockBusinessLogicInterface(mockCtrl)
-			mockBL.EXPECT().UpdateUser(r.Context(), tc.userToMock, tc.expID).Return(tc.userToMock, tc.mockErrReturn)
+
+			if !tc.decodeErrPresent {
+				mockBL.EXPECT().UpdateUser(r.Context(), tc.userToMock, tc.expID).Return(tc.userToMock, tc.mockErrReturn)
+			}
 
 			// create handler with mocks
 			handler := InitHandler(mockBL)
@@ -286,75 +298,6 @@ func TestUpdateUserHandler(t *testing.T) {
 
 			if tc.expIDReturn != "" {
 				require.Equal(t, tc.expIDReturn, string(data))
-			}
-
-			require.Equal(t, tc.expStatusCode, resp.StatusCode, "Wrong status code returned")
-
-		})
-	}
-}
-
-func TestUpdateEventHandlerWithDecodeError(t *testing.T) {
-	testCases := []struct {
-		URLParamValue string
-		jsonStr       string
-		expJSONReturn string
-		expStatusCode int
-	}{
-		{
-			URLParamValue: "5",
-			jsonStr:       `{json string}`,
-			expJSONReturn: `{"ErrorType":"BadRequest","ErrorMessage":"the server cannot process the request"}`,
-			expStatusCode: 400,
-		},
-		{
-			URLParamValue: "10",
-			jsonStr:       `{"hello": world}`,
-			expJSONReturn: `{"ErrorType":"BadRequest","ErrorMessage":"the server cannot process the request"}`,
-			expStatusCode: 400,
-		},
-		{
-			URLParamValue: "15",
-			jsonStr:       `{"name: false"}`,
-			expJSONReturn: `{"ErrorType":"BadRequest","ErrorMessage":"the server cannot process the request"}`,
-			expStatusCode: 400,
-		},
-		{
-			URLParamValue: "1.5",
-			expStatusCode: 400,
-		},
-	}
-	for i, tc := range testCases {
-		testName := fmt.Sprintf("Test %d", i+1)
-		t.Run(testName, func(t *testing.T) {
-
-			r := httptest.NewRequest("UPDATE", "/api/events", bytes.NewBuffer([]byte(tc.jsonStr)))
-			w := httptest.NewRecorder()
-
-			rctx := chi.NewRouteContext()
-			rctx.URLParams.Add("id", tc.URLParamValue)
-
-			r = r.WithContext(context.WithValue(r.Context(), chi.RouteCtxKey, rctx))
-
-			// mock business logic
-			mockCtrl := gomock.NewController(t)
-			defer mockCtrl.Finish()
-
-			mockBL := mocks.NewMockBusinessLogicInterface(mockCtrl)
-
-			// create handler with mocks
-			handler := InitHandler(mockBL)
-			handler.UpdateUserHandler(w, r)
-
-			resp := w.Result()
-
-			data, err := io.ReadAll(resp.Body)
-			if err != nil {
-				t.Error(err)
-			}
-
-			if tc.expJSONReturn != "" {
-				require.JSONEq(t, tc.expJSONReturn, string(data), "JSON data should to be equal")
 			}
 
 			require.Equal(t, tc.expStatusCode, resp.StatusCode, "Wrong status code returned")
