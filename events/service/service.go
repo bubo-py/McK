@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
@@ -20,10 +19,6 @@ type BusinessLogicInterface interface {
 	AddEvent(ctx context.Context, e types.Event) error
 	DeleteEvent(ctx context.Context, id int64) error
 	UpdateEvent(ctx context.Context, e types.Event, id int64) error
-}
-
-var ErrRetrieveTimezoneFail = customErrors.CustomError{
-	Err: errors.New("failed to fetch timezone from context"),
 }
 
 type BusinessLogic struct {
@@ -71,19 +66,19 @@ func (bl BusinessLogic) GetEvents(ctx context.Context, f types.Filters) ([]types
 
 	if f.Day != 0 {
 		if f.Day <= 0 || f.Day >= 32 {
-			return s, fmt.Errorf("%w: day", customErrors.BadRequest)
+			return s, fmt.Errorf("%w: day", customErrors.ErrBadRequest)
 		}
 	}
 
 	if f.Month != 0 {
 		if f.Month <= 0 || f.Month >= 13 {
-			return s, fmt.Errorf("%w: month", customErrors.BadRequest)
+			return s, fmt.Errorf("%w: month", customErrors.ErrBadRequest)
 		}
 	}
 
 	if f.Year != 0 {
 		if f.Year <= 0 {
-			return s, fmt.Errorf("%w: year", customErrors.BadRequest)
+			return s, fmt.Errorf("%w: year", customErrors.ErrBadRequest)
 		}
 	}
 
@@ -187,7 +182,7 @@ func (bl BusinessLogic) UpdateEvent(ctx context.Context, e types.Event, id int64
 func (bl BusinessLogic) eventToUserTime(ctx context.Context, t time.Time) (time.Time, error) {
 	userLocation, ok := contextHelpers.RetrieveTimezoneFromContext(ctx)
 	if !ok {
-		return t, ErrRetrieveTimezoneFail
+		return t, fmt.Errorf("%w: failed to fetch timezone from context", customErrors.ErrUnexpected)
 	}
 
 	location, err := time.LoadLocation(userLocation)
@@ -202,7 +197,7 @@ func (bl BusinessLogic) eventToUserTime(ctx context.Context, t time.Time) (time.
 func (bl BusinessLogic) eventToUTC(ctx context.Context, e types.Event) (types.Event, error) {
 	userLocation, ok := contextHelpers.RetrieveTimezoneFromContext(ctx)
 	if !ok {
-		return e, ErrRetrieveTimezoneFail
+		return e, fmt.Errorf("%w: failed to fetch timezone from context", customErrors.ErrUnexpected)
 	}
 
 	startTimeWithLocation := bl.newDateWithLocation(e.StartTime, userLocation)
@@ -237,9 +232,7 @@ func (bl BusinessLogic) newDateWithLocation(t time.Time, locStr string) time.Tim
 
 func validatePostRequest(e types.Event) error {
 	if e.Name == "" || e.StartTime.IsZero() || e.EndTime.IsZero() {
-		err := customErrors.BadRequest
-		err.Err = errors.New("invalid post request")
-		return err
+		return fmt.Errorf("%w: invalid post request", customErrors.ErrBadRequest)
 	}
 
 	return nil
@@ -247,9 +240,7 @@ func validatePostRequest(e types.Event) error {
 
 func validateLength(s string) error {
 	if len([]rune(s)) > 255 {
-		err := customErrors.BadRequest
-		err.Err = errors.New("length should be less than 255 characters")
-		return err
+		return fmt.Errorf("%w: length should be less than 255 characters", customErrors.ErrBadRequest)
 	}
 
 	return nil

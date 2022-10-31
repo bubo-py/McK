@@ -3,7 +3,6 @@ package handlers
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -74,7 +73,7 @@ func TestGetEventsHandler(t *testing.T) {
 			testName:      "GetEvents_BadRequest",
 			r:             httptest.NewRequest("GET", "/api/events?day=100", nil),
 			w:             httptest.NewRecorder(),
-			mockErrReturn: customErrors.BadRequest,
+			mockErrReturn: customErrors.ErrBadRequest,
 			expFilters:    types.Filters{Day: 100, Month: 0, Year: 0},
 			expJSONReturn: `{"ErrorType":"BadRequest","ErrorMessage":"the server cannot process the request"}`,
 			expStatusCode: 400,
@@ -174,18 +173,26 @@ func TestGetEventHandler(t *testing.T) {
 			expStatusCode: 200,
 		},
 		{
-			testName:      "GetEvent_param_value_BadRequest",
+			testName:      "GetEvent_param_value_Unexpected",
 			URLParamValue: "450",
 			expID:         450,
 			mockErrReturn: customErrors.ErrUnexpected,
 			expJSONReturn: `{"ErrorType":"Unexpected","ErrorMessage":"an unexpected error occurred"}`,
+			expStatusCode: 500,
+		},
+		{
+			testName:      "GetEvent_StrConvErr_NotFound",
+			URLParamValue: "450",
+			expID:         450,
+			mockErrReturn: customErrors.ErrNotFound,
+			expJSONReturn: `{"ErrorType":"NotFound","ErrorMessage":"the server cannot find the requested resource"}`,
 			expStatusCode: 404,
 		},
 		{
 			testName:          "GetEvent_StrConvErr_BadRequest",
 			strConvErrPresent: true,
 			URLParamValue:     "4.50",
-			mockErrReturn:     customErrors.BadRequest,
+			mockErrReturn:     customErrors.ErrBadRequest,
 			expJSONReturn:     `{"ErrorType":"BadRequest","ErrorMessage":"the server cannot process the request"}`,
 			expStatusCode:     400,
 		},
@@ -264,9 +271,22 @@ func TestAddEventHandler(t *testing.T) {
 				StartTime: time.Date(2022, 9, 14, 9, 0, 0, 0, time.UTC),
 				EndTime:   time.Date(2022, 9, 14, 9, 0, 0, 0, time.UTC),
 			},
-			mockErrReturn: customErrors.BadRequest,
+			mockErrReturn: customErrors.ErrBadRequest,
 			expJSONReturn: `{"ErrorType":"BadRequest","ErrorMessage":"the server cannot process the request"}`,
 			expStatusCode: 400,
+		},
+		{
+			testName: "AddEvent_Unexpected",
+			jsonStr:  `{"id":1,"name":"Meeting Name","startTime":"2022-09-14T09:00:00Z","endTime":"2022-09-14T09:00:00Z", "alertTime":"0001-01-01T00:00:00Z"}`,
+			eventToMock: types.Event{
+				ID:        1,
+				Name:      "Meeting Name",
+				StartTime: time.Date(2022, 9, 14, 9, 0, 0, 0, time.UTC),
+				EndTime:   time.Date(2022, 9, 14, 9, 0, 0, 0, time.UTC),
+			},
+			mockErrReturn: customErrors.ErrUnexpected,
+			expJSONReturn: `{"ErrorType":"Unexpected","ErrorMessage":"an unexpected error occurred"}`,
+			expStatusCode: 500,
 		},
 		{
 			testName:         "AddEvent_DecodeErr1",
@@ -348,11 +368,19 @@ func TestDeleteEventHandler(t *testing.T) {
 			expStatusCode: 204,
 		},
 		{
-			testName:      "DeleteEvent_BadRequest",
+			testName:      "DeleteEvent_Unexpected",
 			URLParamValue: "450",
 			expID:         450,
 			mockErrReturn: customErrors.ErrUnexpected,
 			expJSONReturn: `{"ErrorType":"Unexpected","ErrorMessage":"an unexpected error occurred"}`,
+			expStatusCode: 500,
+		},
+		{
+			testName:      "DeleteEvent_NotFound",
+			URLParamValue: "450",
+			expID:         450,
+			mockErrReturn: customErrors.ErrNotFound,
+			expJSONReturn: `{"ErrorType":"NotFound","ErrorMessage":"the server cannot find the requested resource"}`,
 			expStatusCode: 404,
 		},
 	}
@@ -423,7 +451,7 @@ func TestUpdateEventHandler(t *testing.T) {
 			expStatusCode: 200,
 		},
 		{
-			testName:      "UpdateEvent_BadRequest",
+			testName:      "UpdateEvent_Unexpected",
 			jsonStr:       `{"id":1,"name":"Supposedly too long Meeting Name","startTime":"2022-09-14T09:00:00Z","endTime":"2022-09-14T09:00:00Z", "alertTime":"0001-01-01T00:00:00Z"}`,
 			URLParamValue: "100",
 			eventToMock: types.Event{
@@ -435,7 +463,37 @@ func TestUpdateEventHandler(t *testing.T) {
 			expID:         100,
 			mockErrReturn: customErrors.ErrUnexpected,
 			expJSONReturn: `{"ErrorType":"Unexpected","ErrorMessage":"an unexpected error occurred"}`,
+			expStatusCode: 500,
+		},
+		{
+			testName:      "UpdateEvent_NotFound",
+			jsonStr:       `{"id":1,"name":"Meeting Name","startTime":"2022-09-14T09:00:00Z","endTime":"2022-09-14T09:00:00Z", "alertTime":"0001-01-01T00:00:00Z"}`,
+			URLParamValue: "1000",
+			eventToMock: types.Event{
+				ID:        1,
+				Name:      "Meeting Name",
+				StartTime: time.Date(2022, 9, 14, 9, 0, 0, 0, time.UTC),
+				EndTime:   time.Date(2022, 9, 14, 9, 0, 0, 0, time.UTC),
+			},
+			expID:         1000,
+			mockErrReturn: customErrors.ErrNotFound,
+			expJSONReturn: `{"ErrorType":"NotFound","ErrorMessage":"the server cannot find the requested resource"}`,
 			expStatusCode: 404,
+		},
+		{
+			testName:      "UpdateEvent_BadRequest",
+			jsonStr:       `{"id":1,"name":"Meeting Name","startTime":"2022-09-14T09:00:00Z","endTime":"2022-09-14T09:00:00Z", "alertTime":"0001-01-01T00:00:00Z"}`,
+			URLParamValue: "1000",
+			eventToMock: types.Event{
+				ID:        1,
+				Name:      "Meeting Name",
+				StartTime: time.Date(2022, 9, 14, 9, 0, 0, 0, time.UTC),
+				EndTime:   time.Date(2022, 9, 14, 9, 0, 0, 0, time.UTC),
+			},
+			expID:         1000,
+			mockErrReturn: customErrors.ErrBadRequest,
+			expJSONReturn: `{"ErrorType":"BadRequest","ErrorMessage":"the server cannot process the request"}`,
+			expStatusCode: 400,
 		},
 		{
 			testName:         "UpdateEvent_DecodeErr1",
@@ -502,75 +560,6 @@ func TestUpdateEventHandler(t *testing.T) {
 			}
 
 			require.JSONEq(t, tc.expJSONReturn, string(data), "JSON data should be equal")
-
-			require.Equal(t, tc.expStatusCode, resp.StatusCode, "Wrong status code returned")
-
-		})
-	}
-}
-
-func TestUpdateEventHandlerWithDecodeError(t *testing.T) {
-	testCases := []struct {
-		URLParamValue string
-		jsonStr       string
-		expJSONReturn string
-		expStatusCode int
-	}{
-		{
-			URLParamValue: "5",
-			jsonStr:       `{json string}`,
-			expJSONReturn: `{"ErrorType":"BadRequest","ErrorMessage":"the server cannot process the request"}`,
-			expStatusCode: 400,
-		},
-		{
-			URLParamValue: "10",
-			jsonStr:       `{"hello": world}`,
-			expJSONReturn: `{"ErrorType":"BadRequest","ErrorMessage":"the server cannot process the request"}`,
-			expStatusCode: 400,
-		},
-		{
-			URLParamValue: "15",
-			jsonStr:       `{"name": false}`,
-			expJSONReturn: `{"ErrorType":"BadRequest","ErrorMessage":"the server cannot process the request"}`,
-			expStatusCode: 400,
-		},
-		{
-			URLParamValue: "1.5",
-			expStatusCode: 400,
-		},
-	}
-	for i, tc := range testCases {
-		testName := fmt.Sprintf("Test %d", i+1)
-		t.Run(testName, func(t *testing.T) {
-
-			r := httptest.NewRequest("UPDATE", "/api/events", bytes.NewBuffer([]byte(tc.jsonStr)))
-			w := httptest.NewRecorder()
-
-			rctx := chi.NewRouteContext()
-			rctx.URLParams.Add("id", tc.URLParamValue)
-
-			r = r.WithContext(context.WithValue(r.Context(), chi.RouteCtxKey, rctx))
-
-			// mock business logic
-			mockCtrl := gomock.NewController(t)
-			defer mockCtrl.Finish()
-
-			mockBL := mocks.NewMockBusinessLogicInterface(mockCtrl)
-
-			// create handler with mocks
-			handler := InitHandler(mockBL)
-			handler.UpdateEventHandler(w, r)
-
-			resp := w.Result()
-
-			data, err := io.ReadAll(resp.Body)
-			if err != nil {
-				t.Error(err)
-			}
-
-			if tc.expJSONReturn != "" {
-				require.JSONEq(t, tc.expJSONReturn, string(data), "JSON data should to be equal")
-			}
 
 			require.Equal(t, tc.expStatusCode, resp.StatusCode, "Wrong status code returned")
 

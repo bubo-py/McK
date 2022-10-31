@@ -10,19 +10,20 @@ import (
 	"github.com/bubo-py/McK/events/service"
 	"github.com/bubo-py/McK/types"
 	"github.com/go-chi/chi"
+	"github.com/pkg/errors"
 )
 
-type ReturnError struct {
-	ErrorType    string
-	ErrorMessage string
+var badRequestReturn = customErrors.ReturnError{
+	ErrorType:    customErrors.ErrBadRequest.ErrorType,
+	ErrorMessage: customErrors.ErrBadRequest.Error(),
 }
 
-var badRequestReturn = ReturnError{
-	ErrorType:    customErrors.BadRequest.ErrorType,
-	ErrorMessage: customErrors.BadRequest.Error(),
+var notFoundReturn = customErrors.ReturnError{
+	ErrorType:    customErrors.ErrNotFound.ErrorType,
+	ErrorMessage: customErrors.ErrNotFound.Error(),
 }
 
-var notFoundReturn = ReturnError{
+var unexpectedReturn = customErrors.ReturnError{
 	ErrorType:    customErrors.ErrUnexpected.ErrorType,
 	ErrorMessage: customErrors.ErrUnexpected.Error(),
 }
@@ -87,11 +88,7 @@ func (h Handler) GetEventsHandler(w http.ResponseWriter, r *http.Request) {
 
 	events, err := h.bl.GetEvents(r.Context(), f)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		err = json.NewEncoder(w).Encode(badRequestReturn)
-		if err != nil {
-			log.Println(err)
-		}
+		errBasedReturn(w, err)
 		return
 	}
 
@@ -116,11 +113,7 @@ func (h Handler) GetEventHandler(w http.ResponseWriter, r *http.Request) {
 
 	event, err := h.bl.GetEvent(r.Context(), id)
 	if err != nil {
-		w.WriteHeader(http.StatusNotFound)
-		err = json.NewEncoder(w).Encode(notFoundReturn)
-		if err != nil {
-			log.Println(err)
-		}
+		errBasedReturn(w, err)
 		return
 	}
 
@@ -146,11 +139,7 @@ func (h Handler) AddEventHandler(w http.ResponseWriter, r *http.Request) {
 
 	err = h.bl.AddEvent(r.Context(), e)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		err = json.NewEncoder(w).Encode(badRequestReturn)
-		if err != nil {
-			log.Println(err)
-		}
+		errBasedReturn(w, err)
 		return
 	}
 
@@ -172,11 +161,7 @@ func (h Handler) DeleteEventHandler(w http.ResponseWriter, r *http.Request) {
 
 	err = h.bl.DeleteEvent(r.Context(), id)
 	if err != nil {
-		w.WriteHeader(http.StatusNotFound)
-		err = json.NewEncoder(w).Encode(notFoundReturn)
-		if err != nil {
-			log.Println(err)
-		}
+		errBasedReturn(w, err)
 		return
 	}
 
@@ -207,16 +192,35 @@ func (h Handler) UpdateEventHandler(w http.ResponseWriter, r *http.Request) {
 
 	err = h.bl.UpdateEvent(r.Context(), e, id)
 	if err != nil {
-		w.WriteHeader(http.StatusNotFound)
-		err = json.NewEncoder(w).Encode(notFoundReturn)
-		if err != nil {
-			log.Println(err)
-		}
+		errBasedReturn(w, err)
 		return
 	}
 
 	err = json.NewEncoder(w).Encode(e)
 	if err != nil {
 		log.Println(err)
+	}
+}
+
+func errBasedReturn(w http.ResponseWriter, err error) {
+	switch {
+	case errors.Is(err, customErrors.ErrBadRequest):
+		w.WriteHeader(http.StatusBadRequest)
+		err = json.NewEncoder(w).Encode(badRequestReturn)
+		if err != nil {
+			log.Println(err)
+		}
+	case errors.Is(err, customErrors.ErrNotFound):
+		w.WriteHeader(http.StatusNotFound)
+		err = json.NewEncoder(w).Encode(notFoundReturn)
+		if err != nil {
+			log.Println(err)
+		}
+	default:
+		w.WriteHeader(http.StatusInternalServerError)
+		err = json.NewEncoder(w).Encode(unexpectedReturn)
+		if err != nil {
+			log.Println(err)
+		}
 	}
 }

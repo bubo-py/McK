@@ -3,7 +3,6 @@ package handlers
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"io"
 	"net/http/httptest"
 	"testing"
@@ -48,7 +47,7 @@ func TestAddUserHandler(t *testing.T) {
 				Password: "hello",
 				Timezone: "Europe/London",
 			},
-			mockErrReturn: customErrors.BadRequest,
+			mockErrReturn: customErrors.ErrBadRequest,
 			expJSONReturn: `{"ErrorType":"BadRequest","ErrorMessage":"the server cannot process the request"}`,
 			expStatusCode: 400,
 		},
@@ -141,14 +140,21 @@ func TestDeleteUserHandler(t *testing.T) {
 			testName:      "DeleteUser_BadRequest",
 			URLParamValue: "450",
 			expID:         450,
-			mockErrReturn: customErrors.ErrUnexpected,
-			expJSONReturn: `{"ErrorType":"Unexpected","ErrorMessage":"an unexpected error occurred"}`,
-			expStatusCode: 404,
+			mockErrReturn: customErrors.ErrBadRequest,
+			expJSONReturn: `{"ErrorType":"BadRequest","ErrorMessage":"the server cannot process the request"}`,
+			expStatusCode: 400,
+		},
+		{
+			testName:      "DeleteUser_Unauthorized",
+			URLParamValue: "450",
+			expID:         450,
+			mockErrReturn: customErrors.ErrUnauthorized,
+			expJSONReturn: `{"ErrorType":"Unauthorized","ErrorMessage":"the server cannot process the request due to lack of client's access rights"}`,
+			expStatusCode: 403,
 		},
 	}
-	for i, tc := range testCases {
-		testName := fmt.Sprintf("Test %d", i+1)
-		t.Run(testName, func(t *testing.T) {
+	for _, tc := range testCases {
+		t.Run(tc.testName, func(t *testing.T) {
 
 			r := httptest.NewRequest("DELETE", "/api/users", nil)
 			w := httptest.NewRecorder()
@@ -225,9 +231,24 @@ func TestUpdateUserHandler(t *testing.T) {
 				Timezone: "Europe/London",
 			},
 			expID:         2,
-			mockErrReturn: customErrors.ErrUnexpected,
-			expJSONReturn: `{"ErrorType":"Unexpected","ErrorMessage":"an unexpected error occurred"}`,
-			expStatusCode: 404,
+			mockErrReturn: customErrors.ErrBadRequest,
+			expJSONReturn: `{"ErrorType":"BadRequest","ErrorMessage":"the server cannot process the request"}`,
+			expStatusCode: 400,
+		},
+		{
+			testName:      "UpdateUser_Unauthorized",
+			jsonStr:       `{"id":2,"login":"TooLongLogin","password":"hello","timezone":"Europe/London"}`,
+			URLParamValue: "2",
+			userToMock: types.User{
+				ID:       2,
+				Login:    "TooLongLogin",
+				Password: "hello",
+				Timezone: "Europe/London",
+			},
+			expID:         2,
+			mockErrReturn: customErrors.ErrUnauthorized,
+			expJSONReturn: `{"ErrorType":"Unauthorized","ErrorMessage":"the server cannot process the request due to lack of client's access rights"}`,
+			expStatusCode: 403,
 		},
 		{
 			testName:         "UpdateUser_DecodeErr1",

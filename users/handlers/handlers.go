@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"strconv"
@@ -10,19 +11,30 @@ import (
 	"github.com/bubo-py/McK/types"
 	"github.com/bubo-py/McK/users/service"
 	"github.com/go-chi/chi"
+	"github.com/pkg/errors"
 )
 
-type ReturnError struct {
-	ErrorType    string
-	ErrorMessage string
+var badRequestReturn = customErrors.ReturnError{
+	ErrorType:    customErrors.ErrBadRequest.ErrorType,
+	ErrorMessage: customErrors.ErrBadRequest.Error(),
 }
 
-var badRequestReturn = ReturnError{
-	ErrorType:    customErrors.BadRequest.ErrorType,
-	ErrorMessage: customErrors.BadRequest.Error(),
+var notFoundReturn = customErrors.ReturnError{
+	ErrorType:    customErrors.ErrNotFound.ErrorType,
+	ErrorMessage: customErrors.ErrNotFound.Error(),
 }
 
-var notFoundReturn = ReturnError{
+var unauthenticatedReturn = customErrors.ReturnError{
+	ErrorType:    customErrors.ErrUnauthenticated.ErrorType,
+	ErrorMessage: customErrors.ErrUnauthenticated.Error(),
+}
+
+var unauthorizedReturn = customErrors.ReturnError{
+	ErrorType:    customErrors.ErrUnauthorized.ErrorType,
+	ErrorMessage: customErrors.ErrUnauthorized.Error(),
+}
+
+var unexpectedReturn = customErrors.ReturnError{
 	ErrorType:    customErrors.ErrUnexpected.ErrorType,
 	ErrorMessage: customErrors.ErrUnexpected.Error(),
 }
@@ -53,11 +65,8 @@ func (h Handler) AddUserHandler(w http.ResponseWriter, r *http.Request) {
 
 	u, err = h.bl.AddUser(r.Context(), u)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		err = json.NewEncoder(w).Encode(badRequestReturn)
-		if err != nil {
-			log.Println(err)
-		}
+		errBasedReturn(w, err)
+		fmt.Println(err)
 		return
 	}
 
@@ -80,11 +89,7 @@ func (h Handler) DeleteUserHandler(w http.ResponseWriter, r *http.Request) {
 
 	err = h.bl.DeleteUser(r.Context(), id)
 	if err != nil {
-		w.WriteHeader(http.StatusNotFound)
-		err = json.NewEncoder(w).Encode(notFoundReturn)
-		if err != nil {
-			log.Println(err)
-		}
+		errBasedReturn(w, err)
 		return
 	}
 
@@ -116,16 +121,47 @@ func (h Handler) UpdateUserHandler(w http.ResponseWriter, r *http.Request) {
 
 	u, err = h.bl.UpdateUser(r.Context(), u, id)
 	if err != nil {
-		w.WriteHeader(http.StatusNotFound)
-		err = json.NewEncoder(w).Encode(notFoundReturn)
-		if err != nil {
-			log.Println(err)
-		}
+		errBasedReturn(w, err)
 		return
 	}
 
 	err = json.NewEncoder(w).Encode(u.ID)
 	if err != nil {
 		log.Println(err)
+	}
+}
+
+func errBasedReturn(w http.ResponseWriter, err error) {
+	switch {
+	case errors.Is(err, customErrors.ErrBadRequest):
+		w.WriteHeader(http.StatusBadRequest)
+		err = json.NewEncoder(w).Encode(badRequestReturn)
+		if err != nil {
+			log.Println(err)
+		}
+	case errors.Is(err, customErrors.ErrNotFound):
+		w.WriteHeader(http.StatusNotFound)
+		err = json.NewEncoder(w).Encode(notFoundReturn)
+		if err != nil {
+			log.Println(err)
+		}
+	case errors.Is(err, customErrors.ErrUnauthenticated):
+		w.WriteHeader(http.StatusUnauthorized)
+		err = json.NewEncoder(w).Encode(unauthenticatedReturn)
+		if err != nil {
+			log.Println(err)
+		}
+	case errors.Is(err, customErrors.ErrUnauthorized):
+		w.WriteHeader(http.StatusForbidden)
+		err = json.NewEncoder(w).Encode(unauthorizedReturn)
+		if err != nil {
+			log.Println(err)
+		}
+	default:
+		err = json.NewEncoder(w).Encode(unexpectedReturn)
+		w.WriteHeader(http.StatusInternalServerError)
+		if err != nil {
+			log.Println(err)
+		}
 	}
 }

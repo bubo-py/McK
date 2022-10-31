@@ -3,7 +3,6 @@ package postgres
 import (
 	"context"
 	"embed"
-	"errors"
 	"fmt"
 	"log"
 
@@ -14,8 +13,6 @@ import (
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/jackc/tern/migrate"
 )
-
-var errUnexpected = customErrors.ErrUnexpected
 
 //go:embed migrations
 var f embed.FS
@@ -29,8 +26,7 @@ func Init(ctx context.Context, connString string) (Db, error) {
 
 	dbPool, err := pgxpool.Connect(ctx, connString)
 	if err != nil {
-		errUnexpected.Err = err
-		return pg, fmt.Errorf("database initialization error: %w", errUnexpected)
+		return pg, fmt.Errorf("%w: database initialization error: %v", customErrors.ErrUnexpected, err)
 	}
 
 	pg.pool = dbPool
@@ -73,8 +69,7 @@ func (pg Db) migrate(ctx context.Context, mFS embed.FS, rootDir, table string) e
 func RunMigration(ctx context.Context, db Db) error {
 	err := db.migrate(ctx, f, "migrations", "users_migration")
 	if err != nil {
-		errUnexpected.Err = err
-		return fmt.Errorf("database migration error: %w", errUnexpected)
+		return fmt.Errorf("%w: database migration error: %v", customErrors.ErrUnexpected, err)
 	}
 
 	log.Println("Migrations from users domain run correctly")
@@ -94,8 +89,7 @@ func (pg Db) AddUser(ctx context.Context, u types.User) (types.User, error) {
 
 	err := pgxscan.Get(ctx, pg.pool, &u, q, args...)
 	if err != nil {
-		errUnexpected.Err = err
-		return u, fmt.Errorf("database error: SQL query error: %w", errUnexpected)
+		return u, fmt.Errorf("%w: SQL query error: %v", customErrors.ErrUnexpected, err)
 	}
 
 	return u, nil
@@ -110,7 +104,7 @@ func (pg Db) UpdateUser(ctx context.Context, u types.User, id int64) (types.User
 	}
 
 	if exists == false {
-		return u, errors.New("user with specified id not found")
+		return u, customErrors.ErrNotFound
 	}
 
 	ub.Update("users")
@@ -134,8 +128,7 @@ func (pg Db) UpdateUser(ctx context.Context, u types.User, id int64) (types.User
 
 	_, err = pg.pool.Exec(ctx, q, args...)
 	if err != nil {
-		errUnexpected.Err = err
-		return u, fmt.Errorf("database error: SQL query error: %w", errUnexpected)
+		return u, fmt.Errorf("%w: SQL query error: %v", customErrors.ErrUnexpected, err)
 	}
 
 	return u, nil
@@ -150,7 +143,7 @@ func (pg Db) DeleteUser(ctx context.Context, id int64) error {
 	}
 
 	if exists == false {
-		return errors.New("user with specified id not found")
+		return customErrors.ErrNotFound
 	}
 
 	db.DeleteFrom("users")
@@ -160,8 +153,7 @@ func (pg Db) DeleteUser(ctx context.Context, id int64) error {
 
 	_, err = pg.pool.Exec(ctx, q, args...)
 	if err != nil {
-		errUnexpected.Err = err
-		return fmt.Errorf("database error: SQL query error: %w", errUnexpected)
+		return fmt.Errorf("%w: SQL query error: %v", customErrors.ErrUnexpected, err)
 	}
 
 	return nil
@@ -179,8 +171,7 @@ func (pg Db) GetUserByLogin(ctx context.Context, login string) (types.User, erro
 
 	err := pgxscan.Get(ctx, pg.pool, &u, q, args...)
 	if err != nil {
-		log.Println("user with provided login not found")
-		return u, customErrors.IncorrectCredentials
+		return u, fmt.Errorf("%w: user with provided login not found", customErrors.ErrUnauthenticated)
 	}
 
 	return u, nil
@@ -197,16 +188,15 @@ func (pg Db) exists(ctx context.Context, id int64) (bool, error) {
 	q, args := sb.Build()
 
 	rows, err := pg.pool.Query(ctx, q, args...)
-
 	if err != nil {
-		return exists, err
+		return exists, fmt.Errorf("%w: SQL query error: %v", customErrors.ErrUnexpected, err)
 	}
 
 	for rows.Next() {
 
 		values, err := rows.Values()
 		if err != nil {
-			return exists, err
+			return exists, fmt.Errorf("%w: SQL query error: %v", customErrors.ErrUnexpected, err)
 		}
 		exists = values[0].(bool)
 	}
