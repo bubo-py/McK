@@ -40,16 +40,25 @@ var unexpectedReturn = customErrors.ReturnError{
 }
 
 type Handler struct {
-	bl service.BusinessLogicInterface
+	bl  service.BusinessLogicInterface
+	Mux *chi.Mux
 }
 
 func InitHandler(bl service.BusinessLogicInterface) Handler {
 	var h Handler
+
+	r := chi.NewRouter()
+
+	r.Put("/{id}", h.UpdateUserHandler)
+	r.Delete("/{id}", h.DeleteUserHandler)
+
+	h.Mux = r
+
 	h.bl = bl
 	return h
 }
 
-func (h Handler) AddUserHandler(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) AddUserHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	var u types.User
@@ -76,7 +85,7 @@ func (h Handler) AddUserHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h Handler) DeleteUserHandler(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) DeleteUserHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -96,7 +105,7 @@ func (h Handler) DeleteUserHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (h Handler) UpdateUserHandler(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) UpdateUserHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)

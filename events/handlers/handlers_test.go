@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"bytes"
-	"context"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -12,7 +11,6 @@ import (
 	"github.com/bubo-py/McK/customErrors"
 	"github.com/bubo-py/McK/events/repositories/mocks"
 	"github.com/bubo-py/McK/types"
-	"github.com/go-chi/chi"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 )
@@ -145,8 +143,9 @@ func TestGetEventsHandler(t *testing.T) {
 func TestGetEventHandler(t *testing.T) {
 	testCases := []struct {
 		testName          string
+		r                 *http.Request
+		w                 *httptest.ResponseRecorder
 		strConvErrPresent bool
-		URLParamValue     string
 		expID             int64
 		eventToMock       types.Event
 		mockErrReturn     error
@@ -154,9 +153,10 @@ func TestGetEventHandler(t *testing.T) {
 		expStatusCode     int
 	}{
 		{
-			testName:      "GetEvent_with_one_event_return",
-			URLParamValue: "5",
-			expID:         5,
+			testName: "GetEvent_with_one_event_return",
+			r:        httptest.NewRequest("GET", "/5", nil),
+			w:        httptest.NewRecorder(),
+			expID:    5,
 			eventToMock: types.Event{
 				ID:        1,
 				Name:      "Onboarding Meeting",
@@ -168,13 +168,15 @@ func TestGetEventHandler(t *testing.T) {
 		},
 		{
 			testName:      "GetEvent_param_value_no_return",
-			URLParamValue: "450",
+			r:             httptest.NewRequest("GET", "/450", nil),
+			w:             httptest.NewRecorder(),
 			expID:         450,
 			expStatusCode: 200,
 		},
 		{
 			testName:      "GetEvent_param_value_Unexpected",
-			URLParamValue: "450",
+			r:             httptest.NewRequest("GET", "/450", nil),
+			w:             httptest.NewRecorder(),
 			expID:         450,
 			mockErrReturn: customErrors.ErrUnexpected,
 			expJSONReturn: `{"ErrorType":"Unexpected","ErrorMessage":"an unexpected error occurred"}`,
@@ -182,7 +184,8 @@ func TestGetEventHandler(t *testing.T) {
 		},
 		{
 			testName:      "GetEvent_StrConvErr_NotFound",
-			URLParamValue: "450",
+			r:             httptest.NewRequest("GET", "/450", nil),
+			w:             httptest.NewRecorder(),
 			expID:         450,
 			mockErrReturn: customErrors.ErrNotFound,
 			expJSONReturn: `{"ErrorType":"NotFound","ErrorMessage":"the server cannot find the requested resource"}`,
@@ -190,8 +193,9 @@ func TestGetEventHandler(t *testing.T) {
 		},
 		{
 			testName:          "GetEvent_StrConvErr_BadRequest",
+			r:                 httptest.NewRequest("GET", "/4.50", nil),
+			w:                 httptest.NewRecorder(),
 			strConvErrPresent: true,
-			URLParamValue:     "4.50",
 			mockErrReturn:     customErrors.ErrBadRequest,
 			expJSONReturn:     `{"ErrorType":"BadRequest","ErrorMessage":"the server cannot process the request"}`,
 			expStatusCode:     400,
@@ -200,14 +204,6 @@ func TestGetEventHandler(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.testName, func(t *testing.T) {
 
-			r := httptest.NewRequest("GET", "/api/events", nil)
-			w := httptest.NewRecorder()
-
-			rctx := chi.NewRouteContext()
-			rctx.URLParams.Add("id", tc.URLParamValue)
-
-			r = r.WithContext(context.WithValue(r.Context(), chi.RouteCtxKey, rctx))
-
 			// mock business logic
 			mockCtrl := gomock.NewController(t)
 			defer mockCtrl.Finish()
@@ -215,14 +211,14 @@ func TestGetEventHandler(t *testing.T) {
 			mockBL := mocks.NewMockBusinessLogicInterface(mockCtrl)
 
 			if !tc.strConvErrPresent {
-				mockBL.EXPECT().GetEvent(r.Context(), tc.expID).Return(tc.eventToMock, tc.mockErrReturn)
+				mockBL.EXPECT().GetEvent(gomock.Any(), tc.expID).Return(tc.eventToMock, tc.mockErrReturn)
 			}
 
 			// create handler with mocks
 			handler := InitHandler(mockBL)
-			handler.GetEventHandler(w, r)
+			handler.Mux.ServeHTTP(tc.w, tc.r)
 
-			resp := w.Result()
+			resp := tc.w.Result()
 
 			data, err := io.ReadAll(resp.Body)
 			if err != nil {
@@ -349,7 +345,8 @@ func TestAddEventHandler(t *testing.T) {
 func TestDeleteEventHandler(t *testing.T) {
 	testCases := []struct {
 		testName      string
-		URLParamValue string
+		r             *http.Request
+		w             *httptest.ResponseRecorder
 		expID         int64
 		mockErrReturn error
 		expJSONReturn string
@@ -357,19 +354,22 @@ func TestDeleteEventHandler(t *testing.T) {
 	}{
 		{
 			testName:      "DeleteEvent_positive_paramValue_5",
-			URLParamValue: "5",
+			r:             httptest.NewRequest("DELETE", "/5", nil),
+			w:             httptest.NewRecorder(),
 			expID:         5,
 			expStatusCode: 204,
 		},
 		{
 			testName:      "DeleteEvent_positive_paramValue_450",
-			URLParamValue: "450",
+			r:             httptest.NewRequest("DELETE", "/450", nil),
+			w:             httptest.NewRecorder(),
 			expID:         450,
 			expStatusCode: 204,
 		},
 		{
 			testName:      "DeleteEvent_Unexpected",
-			URLParamValue: "450",
+			r:             httptest.NewRequest("DELETE", "/450", nil),
+			w:             httptest.NewRecorder(),
 			expID:         450,
 			mockErrReturn: customErrors.ErrUnexpected,
 			expJSONReturn: `{"ErrorType":"Unexpected","ErrorMessage":"an unexpected error occurred"}`,
@@ -377,7 +377,8 @@ func TestDeleteEventHandler(t *testing.T) {
 		},
 		{
 			testName:      "DeleteEvent_NotFound",
-			URLParamValue: "450",
+			r:             httptest.NewRequest("DELETE", "/450", nil),
+			w:             httptest.NewRecorder(),
 			expID:         450,
 			mockErrReturn: customErrors.ErrNotFound,
 			expJSONReturn: `{"ErrorType":"NotFound","ErrorMessage":"the server cannot find the requested resource"}`,
@@ -387,26 +388,18 @@ func TestDeleteEventHandler(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.testName, func(t *testing.T) {
 
-			r := httptest.NewRequest("DELETE", "/api/events", nil)
-			w := httptest.NewRecorder()
-
-			rctx := chi.NewRouteContext()
-			rctx.URLParams.Add("id", tc.URLParamValue)
-
-			r = r.WithContext(context.WithValue(r.Context(), chi.RouteCtxKey, rctx))
-
 			// mock business logic
 			mockCtrl := gomock.NewController(t)
 			defer mockCtrl.Finish()
 
 			mockBL := mocks.NewMockBusinessLogicInterface(mockCtrl)
-			mockBL.EXPECT().DeleteEvent(r.Context(), tc.expID).Return(tc.mockErrReturn)
+			mockBL.EXPECT().DeleteEvent(gomock.Any(), tc.expID).Return(tc.mockErrReturn)
 
 			// create handler with mocks
 			handler := InitHandler(mockBL)
-			handler.DeleteEventHandler(w, r)
+			handler.Mux.ServeHTTP(tc.w, tc.r)
 
-			resp := w.Result()
+			resp := tc.w.Result()
 
 			data, err := io.ReadAll(resp.Body)
 			if err != nil {
@@ -427,9 +420,9 @@ func TestDeleteEventHandler(t *testing.T) {
 func TestUpdateEventHandler(t *testing.T) {
 	testCases := []struct {
 		testName         string
+		r                *http.Request
+		w                *httptest.ResponseRecorder
 		decodeErrPresent bool
-		jsonStr          string
-		URLParamValue    string
 		expID            int64
 		eventToMock      types.Event
 		mockErrReturn    error
@@ -437,9 +430,9 @@ func TestUpdateEventHandler(t *testing.T) {
 		expStatusCode    int
 	}{
 		{
-			testName:      "UpdateEvent_with_event_return",
-			jsonStr:       `{"id":1,"name":"Onboarding Meeting","startTime":"2022-09-14T09:00:00Z","endTime":"2022-09-14T09:00:00Z", "alertTime":"0001-01-01T00:00:00Z"}`,
-			URLParamValue: "5",
+			testName: "UpdateEvent_with_event_return",
+			r:        httptest.NewRequest("PUT", "/5", bytes.NewBuffer([]byte(`{"id":1,"name":"Onboarding Meeting","startTime":"2022-09-14T09:00:00Z","endTime":"2022-09-14T09:00:00Z", "alertTime":"0001-01-01T00:00:00Z"}`))),
+			w:        httptest.NewRecorder(),
 			eventToMock: types.Event{
 				ID:        1,
 				Name:      "Onboarding Meeting",
@@ -451,9 +444,9 @@ func TestUpdateEventHandler(t *testing.T) {
 			expStatusCode: 200,
 		},
 		{
-			testName:      "UpdateEvent_Unexpected",
-			jsonStr:       `{"id":1,"name":"Supposedly too long Meeting Name","startTime":"2022-09-14T09:00:00Z","endTime":"2022-09-14T09:00:00Z", "alertTime":"0001-01-01T00:00:00Z"}`,
-			URLParamValue: "100",
+			testName: "UpdateEvent_Unexpected",
+			r:        httptest.NewRequest("PUT", "/100", bytes.NewBuffer([]byte(`{"id":1,"name":"Supposedly too long Meeting Name","startTime":"2022-09-14T09:00:00Z","endTime":"2022-09-14T09:00:00Z", "alertTime":"0001-01-01T00:00:00Z"}`))),
+			w:        httptest.NewRecorder(),
 			eventToMock: types.Event{
 				ID:        1,
 				Name:      "Supposedly too long Meeting Name",
@@ -466,9 +459,9 @@ func TestUpdateEventHandler(t *testing.T) {
 			expStatusCode: 500,
 		},
 		{
-			testName:      "UpdateEvent_NotFound",
-			jsonStr:       `{"id":1,"name":"Meeting Name","startTime":"2022-09-14T09:00:00Z","endTime":"2022-09-14T09:00:00Z", "alertTime":"0001-01-01T00:00:00Z"}`,
-			URLParamValue: "1000",
+			testName: "UpdateEvent_NotFound",
+			r:        httptest.NewRequest("PUT", "/1000", bytes.NewBuffer([]byte(`{"id":1,"name":"Meeting Name","startTime":"2022-09-14T09:00:00Z","endTime":"2022-09-14T09:00:00Z", "alertTime":"0001-01-01T00:00:00Z"}`))),
+			w:        httptest.NewRecorder(),
 			eventToMock: types.Event{
 				ID:        1,
 				Name:      "Meeting Name",
@@ -481,9 +474,9 @@ func TestUpdateEventHandler(t *testing.T) {
 			expStatusCode: 404,
 		},
 		{
-			testName:      "UpdateEvent_BadRequest",
-			jsonStr:       `{"id":1,"name":"Meeting Name","startTime":"2022-09-14T09:00:00Z","endTime":"2022-09-14T09:00:00Z", "alertTime":"0001-01-01T00:00:00Z"}`,
-			URLParamValue: "1000",
+			testName: "UpdateEvent_BadRequest",
+			r:        httptest.NewRequest("PUT", "/1000", bytes.NewBuffer([]byte(`{"id":1,"name":"Meeting Name","startTime":"2022-09-14T09:00:00Z","endTime":"2022-09-14T09:00:00Z", "alertTime":"0001-01-01T00:00:00Z"}`))),
+			w:        httptest.NewRecorder(),
 			eventToMock: types.Event{
 				ID:        1,
 				Name:      "Meeting Name",
@@ -497,46 +490,39 @@ func TestUpdateEventHandler(t *testing.T) {
 		},
 		{
 			testName:         "UpdateEvent_DecodeErr1",
+			r:                httptest.NewRequest("PUT", "/5", bytes.NewBuffer([]byte(`{json string}`))),
+			w:                httptest.NewRecorder(),
 			decodeErrPresent: true,
-			URLParamValue:    "5",
-			jsonStr:          `{json string}`,
 			expJSONReturn:    `{"ErrorType":"BadRequest","ErrorMessage":"the server cannot process the request"}`,
 			expStatusCode:    400,
 		},
 		{
 			testName:         "UpdateEvent_DecodeErr2",
+			r:                httptest.NewRequest("PUT", "/10", bytes.NewBuffer([]byte(`{"hello": world}`))),
+			w:                httptest.NewRecorder(),
 			decodeErrPresent: true,
-			URLParamValue:    "10",
-			jsonStr:          `{"hello": world}`,
 			expJSONReturn:    `{"ErrorType":"BadRequest","ErrorMessage":"the server cannot process the request"}`,
 			expStatusCode:    400,
 		},
 		{
 			testName:         "UpdateEvent_DecodeErr3",
+			r:                httptest.NewRequest("PUT", "/15", bytes.NewBuffer([]byte(`{"name": false}`))),
+			w:                httptest.NewRecorder(),
 			decodeErrPresent: true,
-			URLParamValue:    "15",
-			jsonStr:          `{"name": false}`,
 			expJSONReturn:    `{"ErrorType":"BadRequest","ErrorMessage":"the server cannot process the request"}`,
 			expStatusCode:    400,
 		},
 		{
 			testName:         "UpdateEvent_StrconvErr",
+			r:                httptest.NewRequest("PUT", "/1.5", nil),
+			w:                httptest.NewRecorder(),
 			decodeErrPresent: true,
-			URLParamValue:    "1.5",
 			expJSONReturn:    `{"ErrorType":"BadRequest","ErrorMessage":"the server cannot process the request"}`,
 			expStatusCode:    400,
 		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.testName, func(t *testing.T) {
-
-			r := httptest.NewRequest("UPDATE", "/api/events", bytes.NewBuffer([]byte(tc.jsonStr)))
-			w := httptest.NewRecorder()
-
-			rctx := chi.NewRouteContext()
-			rctx.URLParams.Add("id", tc.URLParamValue)
-
-			r = r.WithContext(context.WithValue(r.Context(), chi.RouteCtxKey, rctx))
 
 			// mock business logic
 			mockCtrl := gomock.NewController(t)
@@ -545,14 +531,14 @@ func TestUpdateEventHandler(t *testing.T) {
 			mockBL := mocks.NewMockBusinessLogicInterface(mockCtrl)
 
 			if !tc.decodeErrPresent {
-				mockBL.EXPECT().UpdateEvent(r.Context(), tc.eventToMock, tc.expID).Return(tc.mockErrReturn)
+				mockBL.EXPECT().UpdateEvent(gomock.Any(), tc.eventToMock, tc.expID).Return(tc.mockErrReturn)
 			}
 
 			// create handler with mocks
 			handler := InitHandler(mockBL)
-			handler.UpdateEventHandler(w, r)
+			handler.Mux.ServeHTTP(tc.w, tc.r)
 
-			resp := w.Result()
+			resp := tc.w.Result()
 
 			data, err := io.ReadAll(resp.Body)
 			if err != nil {

@@ -29,16 +29,28 @@ var unexpectedReturn = customErrors.ReturnError{
 }
 
 type Handler struct {
-	bl service.BusinessLogicInterface
+	bl  service.BusinessLogicInterface
+	Mux *chi.Mux
 }
 
 func InitHandler(bl service.BusinessLogicInterface) Handler {
 	var h Handler
+
+	r := chi.NewRouter()
+
+	r.Get("/", h.GetEventsHandler)
+	r.Get("/{id}", h.GetEventHandler)
+	r.Post("/", h.AddEventHandler)
+	r.Put("/{id}", h.UpdateEventHandler)
+	r.Delete("/{id}", h.DeleteEventHandler)
+
+	h.Mux = r
+
 	h.bl = bl
 	return h
 }
 
-func (h Handler) GetEventsHandler(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) GetEventsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	var f types.Filters
@@ -98,7 +110,7 @@ func (h Handler) GetEventsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h Handler) GetEventHandler(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) GetEventHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	id, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
@@ -123,7 +135,7 @@ func (h Handler) GetEventHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h Handler) AddEventHandler(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) AddEventHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	var e types.Event
@@ -149,7 +161,7 @@ func (h Handler) AddEventHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h Handler) DeleteEventHandler(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) DeleteEventHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
 	if err != nil {
 		err = json.NewEncoder(w).Encode(badRequestReturn)
@@ -168,7 +180,7 @@ func (h Handler) DeleteEventHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (h Handler) UpdateEventHandler(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) UpdateEventHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)

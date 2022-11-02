@@ -2,15 +2,14 @@ package handlers
 
 import (
 	"bytes"
-	"context"
 	"io"
+	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/bubo-py/McK/customErrors"
 	"github.com/bubo-py/McK/types"
 	"github.com/bubo-py/McK/users/repositories/mocks"
-	"github.com/go-chi/chi"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 )
@@ -118,7 +117,8 @@ func TestAddUserHandler(t *testing.T) {
 func TestDeleteUserHandler(t *testing.T) {
 	testCases := []struct {
 		testName      string
-		URLParamValue string
+		r             *http.Request
+		w             *httptest.ResponseRecorder
 		expID         int64
 		mockErrReturn error
 		expJSONReturn string
@@ -126,19 +126,22 @@ func TestDeleteUserHandler(t *testing.T) {
 	}{
 		{
 			testName:      "DeleteUser_positive_paramValue_5",
-			URLParamValue: "5",
+			r:             httptest.NewRequest("DELETE", "/5", nil),
+			w:             httptest.NewRecorder(),
 			expID:         5,
 			expStatusCode: 204,
 		},
 		{
 			testName:      "DeleteUser_positive_paramValue_450",
-			URLParamValue: "450",
+			r:             httptest.NewRequest("DELETE", "/450", nil),
+			w:             httptest.NewRecorder(),
 			expID:         450,
 			expStatusCode: 204,
 		},
 		{
 			testName:      "DeleteUser_BadRequest",
-			URLParamValue: "450",
+			r:             httptest.NewRequest("DELETE", "/450", nil),
+			w:             httptest.NewRecorder(),
 			expID:         450,
 			mockErrReturn: customErrors.ErrBadRequest,
 			expJSONReturn: `{"ErrorType":"BadRequest","ErrorMessage":"the server cannot process the request"}`,
@@ -146,7 +149,8 @@ func TestDeleteUserHandler(t *testing.T) {
 		},
 		{
 			testName:      "DeleteUser_Unauthorized",
-			URLParamValue: "450",
+			r:             httptest.NewRequest("DELETE", "/450", nil),
+			w:             httptest.NewRecorder(),
 			expID:         450,
 			mockErrReturn: customErrors.ErrUnauthorized,
 			expJSONReturn: `{"ErrorType":"Unauthorized","ErrorMessage":"the server cannot process the request due to lack of client's access rights"}`,
@@ -156,26 +160,18 @@ func TestDeleteUserHandler(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.testName, func(t *testing.T) {
 
-			r := httptest.NewRequest("DELETE", "/api/users", nil)
-			w := httptest.NewRecorder()
-
-			rctx := chi.NewRouteContext()
-			rctx.URLParams.Add("id", tc.URLParamValue)
-
-			r = r.WithContext(context.WithValue(r.Context(), chi.RouteCtxKey, rctx))
-
 			// mock business logic
 			mockCtrl := gomock.NewController(t)
 			defer mockCtrl.Finish()
 
 			mockBL := mocks.NewMockBusinessLogicInterface(mockCtrl)
-			mockBL.EXPECT().DeleteUser(r.Context(), tc.expID).Return(tc.mockErrReturn)
+			mockBL.EXPECT().DeleteUser(gomock.Any(), tc.expID).Return(tc.mockErrReturn)
 
 			// create handler with mocks
 			handler := InitHandler(mockBL)
-			handler.DeleteUserHandler(w, r)
+			handler.Mux.ServeHTTP(tc.w, tc.r)
 
-			resp := w.Result()
+			resp := tc.w.Result()
 
 			data, err := io.ReadAll(resp.Body)
 			if err != nil {
@@ -196,9 +192,9 @@ func TestDeleteUserHandler(t *testing.T) {
 func TestUpdateUserHandler(t *testing.T) {
 	testCases := []struct {
 		testName         string
+		r                *http.Request
+		w                *httptest.ResponseRecorder
 		decodeErrPresent bool
-		jsonStr          string
-		URLParamValue    string
 		expID            int64
 		expIDReturn      string
 		userToMock       types.User
@@ -207,9 +203,9 @@ func TestUpdateUserHandler(t *testing.T) {
 		expStatusCode    int
 	}{
 		{
-			testName:      "UpdateUser_positive_return",
-			jsonStr:       `{"id":1,"login":"hello","password":"hello","timezone":"Europe/London"}`,
-			URLParamValue: "1",
+			testName: "UpdateUser_positive_return",
+			r:        httptest.NewRequest("PUT", "/1", bytes.NewBuffer([]byte(`{"id":1,"login":"hello","password":"hello","timezone":"Europe/London"}`))),
+			w:        httptest.NewRecorder(),
 			userToMock: types.User{
 				ID:       1,
 				Login:    "hello",
@@ -221,9 +217,9 @@ func TestUpdateUserHandler(t *testing.T) {
 			expStatusCode: 200,
 		},
 		{
-			testName:      "UpdateUser_BadRequest",
-			jsonStr:       `{"id":2,"login":"TooLongLogin","password":"hello","timezone":"Europe/London"}`,
-			URLParamValue: "2",
+			testName: "UpdateUser_BadRequest",
+			r:        httptest.NewRequest("PUT", "/2", bytes.NewBuffer([]byte(`{"id":2,"login":"TooLongLogin","password":"hello","timezone":"Europe/London"}`))),
+			w:        httptest.NewRecorder(),
 			userToMock: types.User{
 				ID:       2,
 				Login:    "TooLongLogin",
@@ -236,9 +232,9 @@ func TestUpdateUserHandler(t *testing.T) {
 			expStatusCode: 400,
 		},
 		{
-			testName:      "UpdateUser_Unauthorized",
-			jsonStr:       `{"id":2,"login":"TooLongLogin","password":"hello","timezone":"Europe/London"}`,
-			URLParamValue: "2",
+			testName: "UpdateUser_Unauthorized",
+			r:        httptest.NewRequest("PUT", "/2", bytes.NewBuffer([]byte(`{"id":2,"login":"TooLongLogin","password":"hello","timezone":"Europe/London"}`))),
+			w:        httptest.NewRecorder(),
 			userToMock: types.User{
 				ID:       2,
 				Login:    "TooLongLogin",
@@ -252,45 +248,38 @@ func TestUpdateUserHandler(t *testing.T) {
 		},
 		{
 			testName:         "UpdateUser_DecodeErr1",
+			r:                httptest.NewRequest("PUT", "/5", bytes.NewBuffer([]byte(`{json string}`))),
+			w:                httptest.NewRecorder(),
 			decodeErrPresent: true,
-			URLParamValue:    "5",
-			jsonStr:          `{json string}`,
 			expJSONReturn:    `{"ErrorType":"BadRequest","ErrorMessage":"the server cannot process the request"}`,
 			expStatusCode:    400,
 		},
 		{
 			testName:         "UpdateUser_DecodeErr2",
+			r:                httptest.NewRequest("PUT", "/10", bytes.NewBuffer([]byte(`{"hello": world}`))),
+			w:                httptest.NewRecorder(),
 			decodeErrPresent: true,
-			URLParamValue:    "10",
-			jsonStr:          `{"hello": world}`,
 			expJSONReturn:    `{"ErrorType":"BadRequest","ErrorMessage":"the server cannot process the request"}`,
 			expStatusCode:    400,
 		},
 		{
 			testName:         "UpdateUser_DecodeErr3",
+			r:                httptest.NewRequest("PUT", "/15", bytes.NewBuffer([]byte(`{"name: false"}`))),
+			w:                httptest.NewRecorder(),
 			decodeErrPresent: true,
-			URLParamValue:    "15",
-			jsonStr:          `{"name: false"}`,
 			expJSONReturn:    `{"ErrorType":"BadRequest","ErrorMessage":"the server cannot process the request"}`,
 			expStatusCode:    400,
 		},
 		{
 			testName:         "UpdateUser_StrconvErr",
+			r:                httptest.NewRequest("PUT", "/1.5", nil),
+			w:                httptest.NewRecorder(),
 			decodeErrPresent: true,
-			URLParamValue:    "1.5",
 			expStatusCode:    400,
 		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.testName, func(t *testing.T) {
-
-			r := httptest.NewRequest("UPDATE", "/api/users", bytes.NewBuffer([]byte(tc.jsonStr)))
-			w := httptest.NewRecorder()
-
-			rctx := chi.NewRouteContext()
-			rctx.URLParams.Add("id", tc.URLParamValue)
-
-			r = r.WithContext(context.WithValue(r.Context(), chi.RouteCtxKey, rctx))
 
 			// mock business logic
 			mockCtrl := gomock.NewController(t)
@@ -299,14 +288,14 @@ func TestUpdateUserHandler(t *testing.T) {
 			mockBL := mocks.NewMockBusinessLogicInterface(mockCtrl)
 
 			if !tc.decodeErrPresent {
-				mockBL.EXPECT().UpdateUser(r.Context(), tc.userToMock, tc.expID).Return(tc.userToMock, tc.mockErrReturn)
+				mockBL.EXPECT().UpdateUser(gomock.Any(), tc.userToMock, tc.expID).Return(tc.userToMock, tc.mockErrReturn)
 			}
 
 			// create handler with mocks
 			handler := InitHandler(mockBL)
-			handler.UpdateUserHandler(w, r)
+			handler.Mux.ServeHTTP(tc.w, tc.r)
 
-			resp := w.Result()
+			resp := tc.w.Result()
 
 			data, err := io.ReadAll(resp.Body)
 			if err != nil {

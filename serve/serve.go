@@ -8,12 +8,10 @@ import (
 
 	eventsHandlers "github.com/bubo-py/McK/events/handlers"
 	eventsPostgres "github.com/bubo-py/McK/events/repositories/postgres"
-	eventsRouters "github.com/bubo-py/McK/events/routers"
 	eventsService "github.com/bubo-py/McK/events/service"
 	"github.com/bubo-py/McK/middlewares"
 	usersHandlers "github.com/bubo-py/McK/users/handlers"
 	usersPostgres "github.com/bubo-py/McK/users/repositories/postgres"
-	userRouters "github.com/bubo-py/McK/users/routers"
 	usersService "github.com/bubo-py/McK/users/service"
 	"github.com/go-chi/chi"
 )
@@ -52,13 +50,13 @@ func Serve(ctx context.Context) {
 	eventsHandler := eventsHandlers.InitHandler(eventsBl)
 	r.Group(func(r chi.Router) {
 		r.Use(middlewares.Authenticate(usersBl))
-		r.Mount("/api/events", eventsRouters.EventsRoutes(eventsHandler))
+		r.Mount("/api/events", eventsHandler.Mux)
 	})
 
 	usersHandler := usersHandlers.InitHandler(usersBl)
 	r.Group(func(r chi.Router) {
 		r.Use(middlewares.Authenticate(usersBl))
-		r.Mount("/api/users", userRouters.UserRoutes(usersHandler))
+		r.Mount("/api/users", usersHandler.Mux)
 	})
 
 	// Unprotected route
