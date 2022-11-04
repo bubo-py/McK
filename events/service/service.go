@@ -201,12 +201,17 @@ func (bl BusinessLogic) eventToUTC(ctx context.Context, e types.Event) (types.Ev
 	}
 
 	startTimeWithLocation := bl.newDateWithLocation(e.StartTime, userLocation)
-	e.StartTime = startTimeWithLocation.In(time.UTC)
+
+	if !e.StartTime.IsZero() {
+		e.StartTime = startTimeWithLocation.In(time.UTC)
+	}
 
 	endTimeWithLocation := bl.newDateWithLocation(e.EndTime, userLocation)
-	e.EndTime = endTimeWithLocation.In(time.UTC)
+	if !e.EndTime.IsZero() {
+		e.EndTime = endTimeWithLocation.In(time.UTC)
+	}
 
-	if e.AlertTime.IsZero() == false {
+	if !e.AlertTime.IsZero() {
 		alertTimeWithLocation := bl.newDateWithLocation(e.AlertTime, userLocation)
 		e.AlertTime = alertTimeWithLocation.In(time.UTC)
 	}
