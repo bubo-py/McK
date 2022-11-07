@@ -1,6 +1,8 @@
 package contextHelpers
 
-import "context"
+import (
+	"context"
+)
 
 type contextKey string
 

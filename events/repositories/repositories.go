@@ -6,6 +6,8 @@ import (
 	"github.com/bubo-py/McK/types"
 )
 
+//go:generate mockgen --build_flags=--mod=mod -destination=mocks/mockDatabase.go -package=mocks github.com/bubo-py/McK/events/repositories DatabaseRepository
+
 type DatabaseRepository interface {
 	GetEvents(ctx context.Context) ([]types.Event, error)
 	GetEventsFiltered(ctx context.Context, f types.Filters) ([]types.Event, error)

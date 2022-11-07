@@ -12,9 +12,9 @@ import (
 )
 
 var (
-	loginErr      = errors.New("login should be at least 3 and contain up to 30 characters")
-	passwordErr   = errors.New("password should be at least 5 characters")
-	authUpdateErr = errors.New("cannot modify another user's account")
+	loginErr    = errors.New("the server cannot process the request: login should be at least 3 and contain up to 30 characters")
+	passwordErr = errors.New("the server cannot process the request: password should be at least 5 characters")
+	authErr     = errors.New("the server cannot process the request due to lack of client's access rights: cannot modify another user's account")
 )
 
 var db = serviceDb.Db{}
@@ -97,7 +97,7 @@ func TestUpdateUser(t *testing.T) {
 				Password: "Hello",
 				Timezone: "Asia/Tokyo",
 			},
-			expError: authUpdateErr,
+			expError: authErr,
 		},
 		{
 			user: types.User{
@@ -105,7 +105,7 @@ func TestUpdateUser(t *testing.T) {
 				Password: "",
 				Timezone: "",
 			},
-			expError: authUpdateErr,
+			expError: authErr,
 		},
 		{
 			user: types.User{
@@ -148,7 +148,7 @@ func TestDeleteUser(t *testing.T) {
 	bl := InitBusinessLogic(db)
 
 	err := bl.DeleteUser(ctx, 1)
-	expErr := errors.New("cannot delete another user's account")
+	expErr := authErr
 	if err.Error() != expErr.Error() {
 		t.Errorf("Failed to delete user: got error: %v, expected: %v", err, expErr)
 	}

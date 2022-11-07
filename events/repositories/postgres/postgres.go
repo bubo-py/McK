@@ -3,10 +3,11 @@ package postgres
 import (
 	"context"
 	"embed"
-	"errors"
+	"fmt"
 	"log"
 	"time"
 
+	"github.com/bubo-py/McK/customErrors"
 	"github.com/bubo-py/McK/types"
 	"github.com/georgysavva/scany/pgxscan"
 	"github.com/huandu/go-sqlbuilder"
@@ -35,10 +36,9 @@ func Init(ctx context.Context, connString string) (Db, error) {
 
 	dbPool, err := pgxpool.Connect(ctx, connString)
 	if err != nil {
-		return pg, err
+		return pg, fmt.Errorf("%w: database initialization error: %v", customErrors.ErrUnexpected, err)
 	}
 
-	//defer dbPool.Close()
 	pg.pool = dbPool
 
 	return pg, nil
@@ -79,7 +79,7 @@ func (pg Db) migrate(ctx context.Context, mFS embed.FS, rootDir, table string) e
 func RunMigration(ctx context.Context, db Db) error {
 	err := db.migrate(ctx, f, "migrations", "events_migration")
 	if err != nil {
-		return err
+		return fmt.Errorf("%w: database migration error: %v", customErrors.ErrUnexpected, err)
 	}
 
 	log.Println("Migrations from events domain run correctly")
@@ -94,7 +94,7 @@ func (pg Db) GetEvents(ctx context.Context) ([]types.Event, error) {
 
 	err := pgxscan.Select(ctx, pg.pool, &events, q.String())
 	if err != nil {
-		return s, err
+		return s, fmt.Errorf("%w: SQL query error: %v", customErrors.ErrUnexpected, err)
 	}
 
 	for _, event := range events {
@@ -122,13 +122,13 @@ func (pg Db) GetEvent(ctx context.Context, id int64) (types.Event, error) {
 
 		err := pgxscan.Get(ctx, pg.pool, &e, q, args...)
 		if err != nil {
-			return types.Event(e), err
+			return types.Event(e), fmt.Errorf("%w: SQL query error: %v", customErrors.ErrUnexpected, err)
 		}
 
 		return types.Event(e), nil
 	}
 
-	return types.Event(e), errors.New("event with specified id not found")
+	return types.Event(e), customErrors.ErrNotFound
 }
 
 func (pg Db) AddEvent(ctx context.Context, e types.Event) error {
@@ -142,7 +142,7 @@ func (pg Db) AddEvent(ctx context.Context, e types.Event) error {
 
 	_, err := pg.pool.Exec(ctx, q, args...)
 	if err != nil {
-		return err
+		return fmt.Errorf("%w: SQL query error: %v", customErrors.ErrUnexpected, err)
 	}
 
 	return nil
@@ -164,13 +164,13 @@ func (pg Db) DeleteEvent(ctx context.Context, id int64) error {
 
 		_, err = pg.pool.Exec(ctx, q, args...)
 		if err != nil {
-			return err
+			return fmt.Errorf("%w: SQL query error: %v", customErrors.ErrUnexpected, err)
 		}
 
 		return nil
 	}
 
-	return errors.New("event with specified id not found")
+	return customErrors.ErrNotFound
 }
 
 func (pg Db) UpdateEvent(ctx context.Context, e types.Event, id int64) error {
@@ -182,7 +182,7 @@ func (pg Db) UpdateEvent(ctx context.Context, e types.Event, id int64) error {
 	}
 
 	if exists == false {
-		return errors.New("event with specified id not found")
+		return customErrors.ErrNotFound
 	}
 
 	ub.Update("events")
@@ -213,7 +213,7 @@ func (pg Db) UpdateEvent(ctx context.Context, e types.Event, id int64) error {
 
 	_, err = pg.pool.Exec(ctx, q, args...)
 	if err != nil {
-		return err
+		return fmt.Errorf("%w: SQL query error: %v", customErrors.ErrUnexpected, err)
 	}
 
 	return nil
@@ -245,7 +245,7 @@ func (pg Db) GetEventsFiltered(ctx context.Context, f types.Filters) ([]types.Ev
 
 	err := pgxscan.Select(ctx, pg.pool, &events, q, args...)
 	if err != nil {
-		return filtered, err
+		return filtered, fmt.Errorf("%w: SQL query error: %v", customErrors.ErrUnexpected, err)
 	}
 
 	for _, event := range events {
@@ -266,16 +266,15 @@ func (pg Db) exists(ctx context.Context, id int64) (bool, error) {
 	q, args := sb.Build()
 
 	rows, err := pg.pool.Query(ctx, q, args...)
-
 	if err != nil {
-		return exists, err
+		return exists, fmt.Errorf("%w: SQL query error: %v", customErrors.ErrUnexpected, err)
 	}
 
 	for rows.Next() {
 
 		values, err := rows.Values()
 		if err != nil {
-			return exists, err
+			return exists, fmt.Errorf("%w: SQL query error: %v", customErrors.ErrUnexpected, err)
 		}
 		exists = values[0].(bool)
 	}

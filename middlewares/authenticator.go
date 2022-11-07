@@ -6,15 +6,22 @@ import (
 	"net/http"
 
 	"github.com/bubo-py/McK/contextHelpers"
+	"github.com/bubo-py/McK/customErrors"
 	"github.com/bubo-py/McK/users/service"
 )
+
+var unauthenticatedReturn = customErrors.ReturnError{
+	ErrorType:    customErrors.ErrUnauthenticated.ErrorType,
+	ErrorMessage: customErrors.ErrUnauthenticated.Error(),
+}
 
 func Authenticate(bl service.BusinessLogicInterface) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			login, pwd, ok := r.BasicAuth()
 			if !ok {
-				err := json.NewEncoder(w).Encode("please provide your credentials")
+				w.WriteHeader(http.StatusUnauthorized)
+				err := json.NewEncoder(w).Encode(unauthenticatedReturn)
 				if err != nil {
 					log.Println(err)
 				}
@@ -24,7 +31,7 @@ func Authenticate(bl service.BusinessLogicInterface) func(next http.Handler) htt
 			err := bl.LoginUser(r.Context(), login, pwd)
 			if err != nil {
 				w.WriteHeader(http.StatusUnauthorized)
-				err = json.NewEncoder(w).Encode(err.Error())
+				err = json.NewEncoder(w).Encode(unauthenticatedReturn)
 				if err != nil {
 					log.Println(err)
 				}
@@ -34,7 +41,7 @@ func Authenticate(bl service.BusinessLogicInterface) func(next http.Handler) htt
 			user, err := bl.GetUserByLogin(r.Context(), login)
 			if err != nil {
 				w.WriteHeader(http.StatusUnauthorized)
-				err = json.NewEncoder(w).Encode(err.Error())
+				err = json.NewEncoder(w).Encode(unauthenticatedReturn)
 				if err != nil {
 					log.Println(err)
 				}

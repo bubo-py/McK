@@ -2,13 +2,16 @@ package service
 
 import (
 	"context"
-	"errors"
+	"fmt"
 	"time"
 
 	"github.com/bubo-py/McK/contextHelpers"
+	"github.com/bubo-py/McK/customErrors"
 	"github.com/bubo-py/McK/events/repositories"
 	"github.com/bubo-py/McK/types"
 )
+
+//go:generate mockgen -destination=../mockService.go -package=events github.com/bubo-py/McK/events/service BusinessLogicInterface
 
 type BusinessLogicInterface interface {
 	GetEvents(ctx context.Context, f types.Filters) ([]types.Event, error)
@@ -43,18 +46,18 @@ func (bl BusinessLogic) GetEvents(ctx context.Context, f types.Filters) ([]types
 			if s[i].AlertTime.IsZero() == false {
 				s[i].AlertTime, err = bl.eventToUserTime(ctx, s[i].AlertTime)
 				if err != nil {
-					return e, nil
+					return e, err
 				}
 			}
 
 			s[i].StartTime, err = bl.eventToUserTime(ctx, s[i].StartTime)
 			if err != nil {
-				return e, nil
+				return e, err
 			}
 
 			s[i].EndTime, err = bl.eventToUserTime(ctx, s[i].EndTime)
 			if err != nil {
-				return e, nil
+				return e, err
 			}
 		}
 
@@ -63,19 +66,19 @@ func (bl BusinessLogic) GetEvents(ctx context.Context, f types.Filters) ([]types
 
 	if f.Day != 0 {
 		if f.Day <= 0 || f.Day >= 32 {
-			return s, errors.New("invalid day value")
+			return s, fmt.Errorf("%w: day", customErrors.ErrBadRequest)
 		}
 	}
 
 	if f.Month != 0 {
 		if f.Month <= 0 || f.Month >= 13 {
-			return s, errors.New("invalid month value")
+			return s, fmt.Errorf("%w: month", customErrors.ErrBadRequest)
 		}
 	}
 
 	if f.Year != 0 {
 		if f.Year <= 0 {
-			return s, errors.New("invalid year value")
+			return s, fmt.Errorf("%w: year", customErrors.ErrBadRequest)
 		}
 	}
 
@@ -90,18 +93,18 @@ func (bl BusinessLogic) GetEvents(ctx context.Context, f types.Filters) ([]types
 		if s[i].AlertTime.IsZero() == false {
 			s[i].AlertTime, err = bl.eventToUserTime(ctx, s[i].AlertTime)
 			if err != nil {
-				return e, nil
+				return e, err
 			}
 		}
 
 		s[i].StartTime, err = bl.eventToUserTime(ctx, s[i].StartTime)
 		if err != nil {
-			return e, nil
+			return e, err
 		}
 
 		s[i].EndTime, err = bl.eventToUserTime(ctx, s[i].EndTime)
 		if err != nil {
-			return e, nil
+			return e, err
 		}
 	}
 
@@ -111,22 +114,22 @@ func (bl BusinessLogic) GetEvents(ctx context.Context, f types.Filters) ([]types
 func (bl BusinessLogic) GetEvent(ctx context.Context, id int64) (types.Event, error) {
 	e, err := bl.db.GetEvent(ctx, id)
 	if err != nil {
-		return e, nil
+		return e, err
 	}
 
 	e.StartTime, err = bl.eventToUserTime(ctx, e.StartTime)
 	if err != nil {
-		return e, nil
+		return e, err
 	}
 
 	e.EndTime, err = bl.eventToUserTime(ctx, e.EndTime)
 	if err != nil {
-		return e, nil
+		return e, err
 	}
 
 	e.AlertTime, err = bl.eventToUserTime(ctx, e.AlertTime)
 	if err != nil {
-		return e, nil
+		return e, err
 	}
 
 	return e, nil
@@ -179,12 +182,12 @@ func (bl BusinessLogic) UpdateEvent(ctx context.Context, e types.Event, id int64
 func (bl BusinessLogic) eventToUserTime(ctx context.Context, t time.Time) (time.Time, error) {
 	userLocation, ok := contextHelpers.RetrieveTimezoneFromContext(ctx)
 	if !ok {
-		return t, errors.New("failed to fetch timezone from context")
+		return t, fmt.Errorf("%w: failed to fetch timezone from context", customErrors.ErrUnexpected)
 	}
 
 	location, err := time.LoadLocation(userLocation)
 	if err != nil {
-		return t, err
+		return t, fmt.Errorf("failed to load location: %w", err)
 	}
 
 	t = t.In(location)
@@ -194,16 +197,21 @@ func (bl BusinessLogic) eventToUserTime(ctx context.Context, t time.Time) (time.
 func (bl BusinessLogic) eventToUTC(ctx context.Context, e types.Event) (types.Event, error) {
 	userLocation, ok := contextHelpers.RetrieveTimezoneFromContext(ctx)
 	if !ok {
-		return e, errors.New("failed to fetch timezone from context")
+		return e, fmt.Errorf("%w: failed to fetch timezone from context", customErrors.ErrUnexpected)
 	}
 
 	startTimeWithLocation := bl.newDateWithLocation(e.StartTime, userLocation)
-	e.StartTime = startTimeWithLocation.In(time.UTC)
+
+	if !e.StartTime.IsZero() {
+		e.StartTime = startTimeWithLocation.In(time.UTC)
+	}
 
 	endTimeWithLocation := bl.newDateWithLocation(e.EndTime, userLocation)
-	e.EndTime = endTimeWithLocation.In(time.UTC)
+	if !e.EndTime.IsZero() {
+		e.EndTime = endTimeWithLocation.In(time.UTC)
+	}
 
-	if e.AlertTime.IsZero() == false {
+	if !e.AlertTime.IsZero() {
 		alertTimeWithLocation := bl.newDateWithLocation(e.AlertTime, userLocation)
 		e.AlertTime = alertTimeWithLocation.In(time.UTC)
 	}
@@ -229,7 +237,7 @@ func (bl BusinessLogic) newDateWithLocation(t time.Time, locStr string) time.Tim
 
 func validatePostRequest(e types.Event) error {
 	if e.Name == "" || e.StartTime.IsZero() || e.EndTime.IsZero() {
-		return errors.New("invalid post request")
+		return fmt.Errorf("%w: invalid post request", customErrors.ErrBadRequest)
 	}
 
 	return nil
@@ -237,7 +245,7 @@ func validatePostRequest(e types.Event) error {
 
 func validateLength(s string) error {
 	if len([]rune(s)) > 255 {
-		return errors.New("length should be less than 255 characters")
+		return fmt.Errorf("%w: length should be less than 255 characters", customErrors.ErrBadRequest)
 	}
 
 	return nil
