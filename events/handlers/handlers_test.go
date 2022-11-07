@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/bubo-py/McK/customErrors"
-	"github.com/bubo-py/McK/events/repositories/mocks"
+	"github.com/bubo-py/McK/events"
 	"github.com/bubo-py/McK/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
@@ -116,7 +116,7 @@ func TestGetEventsHandler(t *testing.T) {
 			mockCtrl := gomock.NewController(t)
 			defer mockCtrl.Finish()
 
-			mockBL := mocks.NewMockBusinessLogicInterface(mockCtrl)
+			mockBL := events.NewMockBusinessLogicInterface(mockCtrl)
 
 			if !tc.strConvErrPresent {
 				mockBL.EXPECT().GetEvents(tc.r.Context(), tc.expFilters).Return(tc.mockDataReturn, tc.mockErrReturn).Times(1)
@@ -208,7 +208,7 @@ func TestGetEventHandler(t *testing.T) {
 			mockCtrl := gomock.NewController(t)
 			defer mockCtrl.Finish()
 
-			mockBL := mocks.NewMockBusinessLogicInterface(mockCtrl)
+			mockBL := events.NewMockBusinessLogicInterface(mockCtrl)
 
 			if !tc.strConvErrPresent {
 				mockBL.EXPECT().GetEvent(gomock.Any(), tc.expID).Return(tc.eventToMock, tc.mockErrReturn)
@@ -317,7 +317,7 @@ func TestAddEventHandler(t *testing.T) {
 			mockCtrl := gomock.NewController(t)
 			defer mockCtrl.Finish()
 
-			mockBL := mocks.NewMockBusinessLogicInterface(mockCtrl)
+			mockBL := events.NewMockBusinessLogicInterface(mockCtrl)
 
 			if !tc.decodeErrPresent {
 				mockBL.EXPECT().AddEvent(r.Context(), tc.eventToMock).Return(tc.mockErrReturn)
@@ -392,7 +392,7 @@ func TestDeleteEventHandler(t *testing.T) {
 			mockCtrl := gomock.NewController(t)
 			defer mockCtrl.Finish()
 
-			mockBL := mocks.NewMockBusinessLogicInterface(mockCtrl)
+			mockBL := events.NewMockBusinessLogicInterface(mockCtrl)
 			mockBL.EXPECT().DeleteEvent(gomock.Any(), tc.expID).Return(tc.mockErrReturn)
 
 			// create handler with mocks
@@ -528,7 +528,7 @@ func TestUpdateEventHandler(t *testing.T) {
 			mockCtrl := gomock.NewController(t)
 			defer mockCtrl.Finish()
 
-			mockBL := mocks.NewMockBusinessLogicInterface(mockCtrl)
+			mockBL := events.NewMockBusinessLogicInterface(mockCtrl)
 
 			if !tc.decodeErrPresent {
 				mockBL.EXPECT().UpdateEvent(gomock.Any(), tc.eventToMock, tc.expID).Return(tc.mockErrReturn)

@@ -9,7 +9,7 @@ import (
 
 	"github.com/bubo-py/McK/customErrors"
 	"github.com/bubo-py/McK/types"
-	"github.com/bubo-py/McK/users/repositories/mocks"
+	"github.com/bubo-py/McK/users"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 )
@@ -83,7 +83,7 @@ func TestAddUserHandler(t *testing.T) {
 			mockCtrl := gomock.NewController(t)
 			defer mockCtrl.Finish()
 
-			mockBL := mocks.NewMockBusinessLogicInterface(mockCtrl)
+			mockBL := users.NewMockBusinessLogicInterface(mockCtrl)
 
 			if !tc.decodeErrPresent {
 				mockBL.EXPECT().AddUser(r.Context(), tc.userToMock).Return(tc.userToMock, tc.mockErrReturn)
@@ -164,7 +164,7 @@ func TestDeleteUserHandler(t *testing.T) {
 			mockCtrl := gomock.NewController(t)
 			defer mockCtrl.Finish()
 
-			mockBL := mocks.NewMockBusinessLogicInterface(mockCtrl)
+			mockBL := users.NewMockBusinessLogicInterface(mockCtrl)
 			mockBL.EXPECT().DeleteUser(gomock.Any(), tc.expID).Return(tc.mockErrReturn)
 
 			// create handler with mocks
@@ -285,7 +285,7 @@ func TestUpdateUserHandler(t *testing.T) {
 			mockCtrl := gomock.NewController(t)
 			defer mockCtrl.Finish()
 
-			mockBL := mocks.NewMockBusinessLogicInterface(mockCtrl)
+			mockBL := users.NewMockBusinessLogicInterface(mockCtrl)
 
 			if !tc.decodeErrPresent {
 				mockBL.EXPECT().UpdateUser(gomock.Any(), tc.userToMock, tc.expID).Return(tc.userToMock, tc.mockErrReturn)

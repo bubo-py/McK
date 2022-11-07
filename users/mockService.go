@@ -2,7 +2,7 @@
 // Source: github.com/bubo-py/McK/users/service (interfaces: BusinessLogicInterface)
 
 // Package mocks is a generated GoMock package.
-package mocks
+package users
 
 import (
 	context "context"

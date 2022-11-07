@@ -2,7 +2,7 @@
 // Source: github.com/bubo-py/McK/events/service (interfaces: BusinessLogicInterface)
 
 // Package mocks is a generated GoMock package.
-package mocks
+package events
 
 import (
 	context "context"

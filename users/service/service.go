@@ -11,7 +11,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-//go:generate mockgen -destination=../repositories/mocks/mockService.go -package=mocks github.com/bubo-py/McK/users/service BusinessLogicInterface
+//go:generate mockgen -destination=../mockService.go -package=users github.com/bubo-py/McK/users/service BusinessLogicInterface
 
 type BusinessLogicInterface interface {
 	AddUser(ctx context.Context, u types.User) (types.User, error)
