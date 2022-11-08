@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/bubo-py/McK/contextHelpers"
@@ -215,7 +216,10 @@ func (bl BusinessLogic) eventToUTC(ctx context.Context, e types.Event) (types.Ev
 }
 
 func (bl BusinessLogic) newDateWithLocation(t time.Time, locStr string) time.Time {
-	loc, _ := time.LoadLocation(locStr)
+	loc, err := time.LoadLocation(locStr)
+	if err != nil {
+		log.Println(err)
+	}
 
 	newDate := time.Date(
 		t.Year(),
