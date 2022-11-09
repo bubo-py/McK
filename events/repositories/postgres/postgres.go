@@ -113,7 +113,7 @@ func (pg Db) GetEvent(ctx context.Context, id int64) (types.Event, error) {
 		return types.Event(e), err
 	}
 
-	if exists == true {
+	if exists {
 		sb.Select("id", "name", "startTime", "endTime", "description", "alertTime")
 		sb.From("events")
 		sb.Where(sb.Equal("id", id))
@@ -156,7 +156,7 @@ func (pg Db) DeleteEvent(ctx context.Context, id int64) error {
 		return err
 	}
 
-	if exists == true {
+	if exists {
 		db.DeleteFrom("events")
 		db.Where(db.Equal("id", id))
 
@@ -181,7 +181,7 @@ func (pg Db) UpdateEvent(ctx context.Context, e types.Event, id int64) error {
 		return err
 	}
 
-	if exists == false {
+	if !exists {
 		return customErrors.ErrNotFound
 	}
 
@@ -191,11 +191,11 @@ func (pg Db) UpdateEvent(ctx context.Context, e types.Event, id int64) error {
 		ub.SetMore(ub.Assign("name", e.Name))
 	}
 
-	if e.StartTime.IsZero() == false {
+	if !e.StartTime.IsZero() {
 		ub.SetMore(ub.Assign("startTime", e.StartTime))
 	}
 
-	if e.EndTime.IsZero() == false {
+	if !e.EndTime.IsZero() {
 		ub.SetMore(ub.Assign("endTime", e.EndTime))
 	}
 
@@ -203,7 +203,7 @@ func (pg Db) UpdateEvent(ctx context.Context, e types.Event, id int64) error {
 		ub.SetMore(ub.Assign("description", e.Description))
 	}
 
-	if e.AlertTime.IsZero() == false {
+	if !e.AlertTime.IsZero() {
 		ub.SetMore(ub.Assign("alertTime", e.AlertTime))
 	}
 

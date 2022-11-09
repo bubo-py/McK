@@ -234,7 +234,7 @@ func TestGetUserByLogin(t *testing.T) {
 		t.Errorf("Failed to retrive user by login: got: %v, expected: %v", u, user2)
 	}
 
-	u, err = db.GetUserByLogin(ctx, "Hello---World")
+	_, err = db.GetUserByLogin(ctx, "Hello---World")
 	if err == nil {
 		t.Errorf("Should return an error: %v", authErr)
 	} else {

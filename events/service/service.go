@@ -44,7 +44,7 @@ func (bl BusinessLogic) GetEvents(ctx context.Context, f types.Filters) ([]types
 		s = append(s, e...)
 
 		for i := range s {
-			if s[i].AlertTime.IsZero() == false {
+			if !s[i].AlertTime.IsZero() {
 				s[i].AlertTime, err = bl.eventToUserTime(ctx, s[i].AlertTime)
 				if err != nil {
 					return e, err
@@ -91,7 +91,7 @@ func (bl BusinessLogic) GetEvents(ctx context.Context, f types.Filters) ([]types
 	s = append(s, e...)
 
 	for i := range s {
-		if s[i].AlertTime.IsZero() == false {
+		if !s[i].AlertTime.IsZero() {
 			s[i].AlertTime, err = bl.eventToUserTime(ctx, s[i].AlertTime)
 			if err != nil {
 				return e, err
@@ -207,7 +207,7 @@ func (bl BusinessLogic) eventToUTC(ctx context.Context, e types.Event) (types.Ev
 	endTimeWithLocation := bl.newDateWithLocation(e.EndTime, userLocation)
 	e.EndTime = endTimeWithLocation.In(time.UTC)
 
-	if e.AlertTime.IsZero() == false {
+	if !e.AlertTime.IsZero() {
 		alertTimeWithLocation := bl.newDateWithLocation(e.AlertTime, userLocation)
 		e.AlertTime = alertTimeWithLocation.In(time.UTC)
 	}
