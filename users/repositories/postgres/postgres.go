@@ -103,7 +103,7 @@ func (pg Db) UpdateUser(ctx context.Context, u types.User, id int64) (types.User
 		return u, err
 	}
 
-	if exists == false {
+	if !exists {
 		return u, customErrors.ErrNotFound
 	}
 
@@ -142,7 +142,7 @@ func (pg Db) DeleteUser(ctx context.Context, id int64) error {
 		return err
 	}
 
-	if exists == false {
+	if !exists {
 		return customErrors.ErrNotFound
 	}
 

@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/bubo-py/McK/contextHelpers"
@@ -43,7 +44,7 @@ func (bl BusinessLogic) GetEvents(ctx context.Context, f types.Filters) ([]types
 		s = append(s, e...)
 
 		for i := range s {
-			if s[i].AlertTime.IsZero() == false {
+			if !s[i].AlertTime.IsZero() {
 				s[i].AlertTime, err = bl.eventToUserTime(ctx, s[i].AlertTime)
 				if err != nil {
 					return e, err
@@ -90,7 +91,7 @@ func (bl BusinessLogic) GetEvents(ctx context.Context, f types.Filters) ([]types
 	s = append(s, e...)
 
 	for i := range s {
-		if s[i].AlertTime.IsZero() == false {
+		if !s[i].AlertTime.IsZero() {
 			s[i].AlertTime, err = bl.eventToUserTime(ctx, s[i].AlertTime)
 			if err != nil {
 				return e, err
@@ -220,7 +221,10 @@ func (bl BusinessLogic) eventToUTC(ctx context.Context, e types.Event) (types.Ev
 }
 
 func (bl BusinessLogic) newDateWithLocation(t time.Time, locStr string) time.Time {
-	loc, _ := time.LoadLocation(locStr)
+	loc, err := time.LoadLocation(locStr)
+	if err != nil {
+		log.Println(err)
+	}
 
 	newDate := time.Date(
 		t.Year(),
